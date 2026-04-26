@@ -564,36 +564,43 @@ body { font-family: 'Segoe UI', 'Noto Sans', Roboto, 'Arial Unicode MS', Arial, 
         </div>
       </div>
 
-      <!-- Compact single-line date navigator -->
+      <!-- Date navigator — Row 1: Date | Month | Year -->
       <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:8px 10px;margin-bottom:8px;">
         <!-- Hidden selects for JS value storage -->
         <select id="attYear"  onchange="onAttFilterChange()" style="display:none;"></select>
         <select id="attMonth" onchange="onAttFilterChange()" style="display:none;"></select>
-        <!-- Single row: DD | MMM | YYYY | View -->
-        <div style="display:flex;align-items:center;gap:5px;">
+        <!-- Row 1: DD | MMM YYYY -->
+        <div style="display:flex;align-items:center;gap:4px;margin-bottom:6px;">
           <!-- Date segment -->
           <button class="arrow-btn" onclick="navAtt('date',-1)" style="width:26px;height:26px;flex-shrink:0;">‹</button>
           <select id="attDate" onchange="onAttFilterChange()"
-            style="background:var(--card2);border:1px solid var(--border);border-radius:7px;color:var(--gold);font-size:13px;font-weight:700;padding:5px 4px;text-align:center;outline:none;min-width:52px;flex:1;max-width:62px;cursor:pointer;"></select>
+            style="background:var(--card2);border:1px solid var(--border);border-radius:7px;color:var(--gold);font-size:12px;font-weight:700;padding:5px 3px;text-align:center;outline:none;flex:1;cursor:pointer;"></select>
           <button class="arrow-btn" onclick="navAtt('date',1)" style="width:26px;height:26px;flex-shrink:0;">›</button>
           <div style="width:1px;height:20px;background:var(--border);flex-shrink:0;"></div>
           <!-- Month segment -->
           <button class="arrow-btn" onclick="navAtt('month',-1)" style="width:26px;height:26px;flex-shrink:0;">‹</button>
           <select id="attMonthDisplay" onchange="onAttMonthDisplayChange()"
-            style="background:var(--card2);border:1px solid var(--border);border-radius:7px;color:var(--gold);font-size:13px;font-weight:700;padding:5px 4px;text-align:center;outline:none;min-width:46px;flex:1;max-width:60px;cursor:pointer;"></select>
+            style="background:var(--card2);border:1px solid var(--border);border-radius:7px;color:var(--gold);font-size:12px;font-weight:700;padding:5px 3px;text-align:center;outline:none;flex:1.5;cursor:pointer;"></select>
           <button class="arrow-btn" onclick="navAtt('month',1)" style="width:26px;height:26px;flex-shrink:0;">›</button>
           <div style="width:1px;height:20px;background:var(--border);flex-shrink:0;"></div>
           <!-- Year segment -->
           <button class="arrow-btn" onclick="navAtt('year',-1)" style="width:26px;height:26px;flex-shrink:0;">‹</button>
           <select id="attYearDisplay" onchange="onAttYearDisplayChange()"
-            style="background:var(--card2);border:1px solid var(--border);border-radius:7px;color:var(--gold);font-size:13px;font-weight:700;padding:5px 4px;text-align:center;outline:none;min-width:54px;flex:1;max-width:66px;cursor:pointer;"></select>
+            style="background:var(--card2);border:1px solid var(--border);border-radius:7px;color:var(--gold);font-size:12px;font-weight:700;padding:5px 3px;text-align:center;outline:none;flex:1;cursor:pointer;"></select>
           <button class="arrow-btn" onclick="navAtt('year',1)" style="width:26px;height:26px;flex-shrink:0;">›</button>
-          <div style="width:1px;height:20px;background:var(--border);flex-shrink:0;"></div>
-          <!-- View type -->
-          <select id="attViewType" onchange="renderAttendance()"
-            style="background:var(--card2);border:1px solid var(--border);border-radius:7px;color:var(--offwhite);font-size:11px;font-weight:600;padding:5px 4px;outline:none;flex:1;max-width:72px;cursor:pointer;">
+        </div>
+        <!-- Row 2: View type buttons -->
+        <div style="display:flex;gap:6px;">
+          <button id="attViewDay" onclick="setAttView('day')"
+            style="flex:1;padding:6px 0;border-radius:7px;border:1px solid var(--accent2);background:var(--accent2);color:#fff;font-size:12px;font-weight:700;cursor:pointer;">📅 Day</button>
+          <button id="attViewMonth" onclick="setAttView('month')"
+            style="flex:1;padding:6px 0;border-radius:7px;border:1px solid var(--border);background:var(--card2);color:var(--offwhite);font-size:12px;font-weight:700;cursor:pointer;">📆 Month</button>
+          <button id="attViewYear" onclick="setAttView('year')"
+            style="flex:1;padding:6px 0;border-radius:7px;border:1px solid var(--border);background:var(--card2);color:var(--offwhite);font-size:12px;font-weight:700;cursor:pointer;">🗓️ Year</button>
+          <select id="attViewType" onchange="renderAttendance()" style="display:none;">
             <option value="day">Day</option>
             <option value="month">Month</option>
+            <option value="year">Year</option>
           </select>
         </div>
       </div>
@@ -617,42 +624,47 @@ body { font-family: 'Segoe UI', 'Noto Sans', Roboto, 'Arial Unicode MS', Arial, 
         </div>
       </div>
 
-      <!-- Compact single-line fee navigator -->
+      <!-- Fee navigator — Row 1: Month | Year | Status · Row 2: Mode -->
       <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:8px 10px;margin-bottom:8px;">
         <!-- Hidden selects for JS value storage -->
         <select id="feeMonth"    onchange="renderFees()" style="display:none;"></select>
         <select id="feeYear"     onchange="renderFees()" style="display:none;"></select>
         <select id="feeYearOnly" onchange="renderFees()" style="display:none;"></select>
-        <!-- Mode toggle row -->
-        <div style="display:flex;gap:5px;margin-bottom:7px;">
-          <button class="btn btn-sm" id="feeFilterMonthBtn" onclick="setFeeFilterMode('month')" style="flex:1;background:var(--accent2);color:#fff;border-radius:7px;font-size:12px;padding:6px 0;">📅 Monthly</button>
-          <button class="btn btn-outline btn-sm" id="feeFilterYearBtn" onclick="setFeeFilterMode('year')" style="flex:1;border-radius:7px;font-size:12px;padding:6px 0;">📆 Yearly</button>
+        <!-- Row 1: Month | Year | Status filter — single line -->
+        <div style="display:flex;align-items:center;gap:4px;margin-bottom:6px;">
+          <!-- Month segment (hidden in year mode) -->
+          <span id="feeMonthNavBtns" style="display:contents;">
+            <button class="arrow-btn" onclick="navFee('month',-1)" style="width:26px;height:26px;flex-shrink:0;">‹</button>
+            <select id="feeMonthDisplay" onchange="onFeeMonthDisplayChange()"
+              style="background:var(--card2);border:1px solid var(--border);border-radius:7px;color:var(--gold);font-size:12px;font-weight:700;padding:5px 3px;text-align:center;outline:none;flex:1.5;cursor:pointer;"></select>
+            <button class="arrow-btn" onclick="navFee('month',1)" style="width:26px;height:26px;flex-shrink:0;">›</button>
+            <div id="feeMonthDivider" style="width:1px;height:20px;background:var(--border);flex-shrink:0;"></div>
+          </span>
+          <!-- Year segment -->
+          <button class="arrow-btn" onclick="navFee('year',-1)" style="width:26px;height:26px;flex-shrink:0;">‹</button>
+          <select id="feeYearDisplay" onchange="onFeeYearDisplayChange()"
+            style="background:var(--card2);border:1px solid var(--border);border-radius:7px;color:var(--gold);font-size:12px;font-weight:700;padding:5px 3px;text-align:center;outline:none;flex:1;cursor:pointer;"></select>
+          <button class="arrow-btn" onclick="navFee('year',1)" style="width:26px;height:26px;flex-shrink:0;">›</button>
+          <div style="width:1px;height:20px;background:var(--border);flex-shrink:0;"></div>
+          <!-- Status filter -->
           <select id="feeStatusFilter" onchange="renderFees()"
-            style="flex:1;background:var(--card2);border:1px solid var(--border);border-radius:7px;color:var(--offwhite);font-size:11px;font-weight:600;padding:5px 4px;outline:none;cursor:pointer;max-width:100px;">
+            style="flex:1.2;background:var(--card2);border:1px solid var(--border);border-radius:7px;color:var(--offwhite);font-size:11px;font-weight:600;padding:5px 3px;outline:none;cursor:pointer;">
             <option value="all">All</option>
             <option value="paid">Paid</option>
             <option value="unpaid">Unpaid</option>
           </select>
         </div>
-        <!-- Monthly navigator (single line) -->
-        <div id="feeMonthFilter" style="display:flex;align-items:center;gap:5px;">
-          <button class="arrow-btn" onclick="navFee('month',-1)" style="width:26px;height:26px;flex-shrink:0;">‹</button>
-          <select id="feeMonthDisplay" onchange="onFeeMonthDisplayChange()"
-            style="background:var(--card2);border:1px solid var(--border);border-radius:7px;color:var(--gold);font-size:13px;font-weight:700;padding:5px 4px;text-align:center;outline:none;flex:1;cursor:pointer;"></select>
-          <button class="arrow-btn" onclick="navFee('month',1)" style="width:26px;height:26px;flex-shrink:0;">›</button>
-          <div style="width:1px;height:20px;background:var(--border);flex-shrink:0;"></div>
-          <button class="arrow-btn" onclick="navFee('year',-1)" style="width:26px;height:26px;flex-shrink:0;">‹</button>
-          <select id="feeYearDisplay" onchange="onFeeYearDisplayChange()"
-            style="background:var(--card2);border:1px solid var(--border);border-radius:7px;color:var(--gold);font-size:13px;font-weight:700;padding:5px 4px;text-align:center;outline:none;min-width:58px;cursor:pointer;"></select>
-          <button class="arrow-btn" onclick="navFee('year',1)" style="width:26px;height:26px;flex-shrink:0;">›</button>
+        <!-- Row 2: Mode toggle buttons -->
+        <div style="display:flex;gap:6px;">
+          <button id="feeFilterMonthBtn" onclick="setFeeFilterMode('month')"
+            style="flex:1;padding:6px 0;border-radius:7px;border:1px solid var(--accent2);background:var(--accent2);color:#fff;font-size:12px;font-weight:700;cursor:pointer;">📅 Monthly</button>
+          <button id="feeFilterYearBtn" onclick="setFeeFilterMode('year')"
+            style="flex:1;padding:6px 0;border-radius:7px;border:1px solid var(--border);background:var(--card2);color:var(--offwhite);font-size:12px;font-weight:700;cursor:pointer;">📆 Yearly</button>
         </div>
-        <!-- Yearly navigator (single line) -->
-        <div id="feeYearFilter" style="display:none;align-items:center;gap:5px;">
-          <button class="arrow-btn" onclick="navFee('year',-1)" style="width:26px;height:26px;flex-shrink:0;">‹</button>
-          <select id="feeYearOnlyDisplay" onchange="onFeeYearOnlyDisplayChange()"
-            style="background:var(--card2);border:1px solid var(--border);border-radius:7px;color:var(--gold);font-size:15px;font-weight:700;padding:5px 8px;text-align:center;outline:none;flex:1;cursor:pointer;"></select>
-          <button class="arrow-btn" onclick="navFee('year',1)" style="width:26px;height:26px;flex-shrink:0;">›</button>
-        </div>
+        <!-- Keep legacy year-only display select hidden (used by JS) -->
+        <select id="feeYearOnlyDisplay" onchange="onFeeYearOnlyDisplayChange()" style="display:none;"></select>
+        <div id="feeMonthFilter" style="display:none;"></div>
+        <div id="feeYearFilter"  style="display:none;"></div>
       </div>
 
       <div class="search-wrap">
@@ -2903,9 +2915,14 @@ function parseImportCSV(text) {
     const get = key => colMap[key] !== undefined ? (cols[colMap[key]] || '').trim() : '';
     const name = get('name');
     if (!name) return null;
+    // Case-insensitive batch match: find existing batch by name
+    const rawBatch = get('batch');
+    const matchedBatch = rawBatch
+      ? (DB.batches.find(b => b.toLowerCase() === rawBatch.toLowerCase()) || rawBatch)
+      : (DB.batches[0] || '');
     return {
       name,
-      batch:    get('batch') || (DB.batches[0] || ''),
+      batch:    matchedBatch,
       age:      get('age'),
       dob:      excelDateToDisplay(get('dob')),
       parent:   get('parent'),
@@ -3142,6 +3159,21 @@ function onAttYearDisplayChange() {
   const ySel = document.getElementById('attYear');
   if (ySel && v) { Array.from(ySel.options).forEach(o => o.selected = o.value === v); }
   onAttFilterChange();
+}
+
+// ── Attendance view toggle (Day / Month / Year) ───────────────────
+function setAttView(view) {
+  const sel = document.getElementById('attViewType');
+  if (sel) sel.value = view;
+  ['Day','Month','Year'].forEach(v => {
+    const btn = document.getElementById('attView' + v);
+    if (!btn) return;
+    const active = view.toLowerCase() === v.toLowerCase();
+    btn.style.background  = active ? 'var(--accent2)' : 'var(--card2)';
+    btn.style.color       = active ? '#fff' : 'var(--offwhite)';
+    btn.style.borderColor = active ? 'var(--accent2)' : 'var(--border)';
+  });
+  renderAttendance();
 }
 
 // ── Fee display selects bridge ────────────────────────────────────
@@ -3625,8 +3657,49 @@ function renderAttendance() {
     wrap.innerHTML = html;
     updateWheel(enrolled, pCount, aCount, lCount, classDay);
 
+  } else if (viewType === 'year') {
+    // YEAR VIEW — monthly summary for the whole year
+    summBar.innerHTML = `<div class="att-summary-bar">
+      <span style="color:var(--gold);">🗓️ Year ${y} — Annual Summary</span>
+    </div>`;
+
+    let yearHtml = '';
+    let totalP = 0, totalA = 0, totalDays = 0;
+    for (let mo = 1; mo <= 12; mo++) {
+      const prefix = `${y}-${pad(mo)}-`;
+      const classDays = Object.keys(DB.attendance)
+        .filter(k => k.startsWith(prefix) && isClassDay(k)).sort();
+      if (!classDays.length) continue;
+      totalDays += classDays.length;
+      const enrolled = students.filter(s => isEnrolledOnDate(s, y, mo, 0));
+      let mP = 0, mA = 0;
+      enrolled.forEach(s => {
+        classDays.forEach(dk => {
+          const v = (DB.attendance[dk]||{})[s.id];
+          if (v==='P') mP++;
+          else if (v==='A') mA++;
+        });
+      });
+      totalP += mP; totalA += mA;
+      yearHtml += `<div style="display:flex;align-items:center;padding:8px 12px;border-bottom:1px solid var(--border);gap:10px;">
+        <div style="width:42px;font-size:12px;font-weight:700;color:var(--gold);flex-shrink:0;">${MONTHS[mo-1].substring(0,3)}</div>
+        <div style="flex:1;font-size:11px;color:var(--gray);">${classDays.length} class days · ${enrolled.length} students</div>
+        <span style="color:#4ade80;font-size:11px;font-weight:700;">✅ ${mP}</span>
+        <span style="color:#f87171;font-size:11px;font-weight:700;">❌ ${mA}</span>
+      </div>`;
+    }
+
+    wrap.innerHTML = `<div style="background:var(--card2);border-radius:8px;padding:8px 12px;margin-bottom:8px;font-size:12px;display:flex;gap:12px;flex-wrap:wrap;">
+      <span style="color:var(--gold);">📅 ${totalDays} total class days in ${y}</span>
+      <span style="color:#4ade80;">✅ ${totalP} present records</span>
+      <span style="color:#f87171;">❌ ${totalA} absent records</span>
+    </div>
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;">
+      ${yearHtml || '<div class="empty-state">No attendance recorded for ' + y + '.</div>'}
+    </div>`;
+    summBar.innerHTML = '';
+
   } else {
-    // MONTH VIEW
     const prefix = `${y}-${pad(m)}-`;
     const classDays = Object.keys(DB.attendance)
       .filter(k => k.startsWith(prefix) && isClassDay(k))
@@ -3741,19 +3814,23 @@ function initFeeFilters() {
 
 function setFeeFilterMode(mode) {
   feeFilterMode = mode;
-  const monthDiv = document.getElementById('feeMonthFilter');
-  const yearDiv  = document.getElementById('feeYearFilter');
   const monthBtn = document.getElementById('feeFilterMonthBtn');
   const yearBtn  = document.getElementById('feeFilterYearBtn');
-  if (!monthDiv || !yearDiv) return;
+  // Toggle month nav visibility in the single-line row
+  const monthNavBtns = document.getElementById('feeMonthNavBtns');
+  const monthDivider = document.getElementById('feeMonthDivider');
+
   if (mode === 'month') {
-    monthDiv.style.display = 'flex'; yearDiv.style.display = 'none';
-    if (monthBtn) { monthBtn.style.background='var(--accent2)'; monthBtn.style.color='#fff'; monthBtn.className='btn btn-sm'; }
-    if (yearBtn)  { yearBtn.style.background='';  yearBtn.style.color='';    yearBtn.className='btn btn-outline btn-sm'; }
+    if (monthNavBtns) { monthNavBtns.style.display = 'contents'; }
+    if (monthDivider) { monthDivider.style.display = ''; }
+    if (monthBtn) { monthBtn.style.background='var(--accent2)'; monthBtn.style.color='#fff'; monthBtn.style.borderColor='var(--accent2)'; }
+    if (yearBtn)  { yearBtn.style.background='var(--card2)';    yearBtn.style.color='var(--offwhite)'; yearBtn.style.borderColor='var(--border)'; }
   } else {
-    monthDiv.style.display = 'none'; yearDiv.style.display = 'flex';
-    if (yearBtn)  { yearBtn.style.background='var(--accent2)';  yearBtn.style.color='#fff'; yearBtn.className='btn btn-sm'; }
-    if (monthBtn) { monthBtn.style.background=''; monthBtn.style.color='';   monthBtn.className='btn btn-outline btn-sm'; }
+    // Year mode — hide month nav
+    if (monthNavBtns) { monthNavBtns.style.display = 'none'; }
+    if (monthDivider) { monthDivider.style.display = 'none'; }
+    if (yearBtn)  { yearBtn.style.background='var(--accent2)';  yearBtn.style.color='#fff'; yearBtn.style.borderColor='var(--accent2)'; }
+    if (monthBtn) { monthBtn.style.background='var(--card2)';   monthBtn.style.color='var(--offwhite)'; monthBtn.style.borderColor='var(--border)'; }
     // sync year selectors
     const fy = document.getElementById('feeYear').value;
     const yo = document.getElementById('feeYearOnly');
