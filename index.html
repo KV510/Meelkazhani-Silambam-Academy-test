@@ -491,11 +491,40 @@ body { font-family: 'Segoe UI', 'Noto Sans', Roboto, 'Arial Unicode MS', Arial, 
           <button class="btn btn-primary btn-sm" onclick="openAddStudentModal()">+ Add</button>
         </div>
       </div>
+
+      <!-- SEARCH + FILTER BAR -->
       <div class="search-wrap">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         <input type="text" class="search-input" placeholder="Search by name, contact or parent…" id="studentSearch" oninput="renderStudentList()">
       </div>
+
+      <!-- ADVANCED FILTERS -->
+      <div class="filter-bar" style="margin-bottom:8px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;">
+          <div style="font-size:10px;color:var(--gold);font-weight:700;letter-spacing:.5px;">🔽 FILTERS</div>
+          <button class="btn btn-xs btn-outline" onclick="clearStudentFilters()">✕ Clear</button>
+        </div>
+        <div style="display:flex;gap:7px;flex-wrap:wrap;">
+          <input type="text" class="filter-select" id="filterStudentName" placeholder="Filter by name…" oninput="renderStudentList()" style="flex:1;min-width:100px;">
+          <select class="filter-select" id="filterStudentBatch" onchange="renderStudentList()" style="flex:1;min-width:90px;">
+            <option value="">All Batches</option>
+          </select>
+          <input type="text" class="filter-select" id="filterStudentSchool" placeholder="Filter by school…" oninput="renderStudentList()" style="flex:1;min-width:100px;">
+        </div>
+      </div>
+
       <div class="batch-chips" id="studentBatchChips"></div>
+
+      <!-- MULTI-SELECT TOOLBAR -->
+      <div id="studentSelectToolbar" style="display:none;background:var(--accent);border:1px solid var(--accent2);border-radius:10px;padding:9px 12px;margin-bottom:8px;display:none;align-items:center;gap:8px;flex-wrap:wrap;">
+        <div style="flex:1;font-size:13px;font-weight:700;color:var(--gold);">
+          <span id="selectedCountLabel">0</span> selected
+        </div>
+        <button class="btn btn-xs btn-outline" onclick="selectAllStudents()" style="font-size:11px;">✅ Select All</button>
+        <button class="btn btn-xs btn-outline" onclick="clearStudentSelection()" style="font-size:11px;">✕ Deselect All</button>
+        <button class="btn btn-xs btn-gold" onclick="openBulkEditModal()" style="font-size:11px;">✏️ Bulk Edit</button>
+      </div>
+
       <div id="studentListWrap"></div>
     </div>
 
@@ -918,10 +947,7 @@ body { font-family: 'Segoe UI', 'Noto Sans', Roboto, 'Arial Unicode MS', Arial, 
     <div class="form-group"><label class="form-label">School Name</label><input type="text" class="form-input" id="sAddress" placeholder="School / College name"></div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Joining Date *</label><input type="text" class="form-input" id="sJoinDate" placeholder="DD/MM/YYYY"></div>
-      <div class="form-group"><label class="form-label">Batch</label>
-        <div id="sBatchChips" style="display:flex;flex-wrap:wrap;gap:6px;padding:4px 0;min-height:34px;"></div>
-        <input type="hidden" id="sBatch">
-      </div>
+      <div class="form-group"><label class="form-label">Batch</label><select class="form-select" id="sBatch"></select></div>
     </div>
     <div id="convertFromEnqNote" style="display:none;background:#16a34a22;border:1px solid #16a34a55;color:#4ade80;border-radius:8px;padding:9px 12px;margin-bottom:10px;font-size:12px;line-height:1.5;"></div>
     <button class="btn btn-primary" style="width:100%;padding:12px;" onclick="saveStudent()">💾 Save Student</button>
@@ -950,6 +976,39 @@ body { font-family: 'Segoe UI', 'Noto Sans', Roboto, 'Arial Unicode MS', Arial, 
       </div>
     </div>
     <div id="importError" style="display:none;color:#f87171;font-size:12px;padding:8px;background:#f8717120;border-radius:6px;"></div>
+  </div>
+</div>
+
+<!-- BULK EDIT STUDENTS -->
+<div class="modal-overlay" id="modalBulkEdit">
+  <div class="modal">
+    <div class="modal-title">
+      <span>✏️ Bulk Edit — <span id="bulkEditCountLabel">0</span> Students</span>
+      <button class="modal-close" onclick="closeModal('modalBulkEdit')">×</button>
+    </div>
+    <div style="background:var(--card2);border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:12px;color:var(--gray);line-height:1.6;">
+      Leave a field <b style="color:var(--gold);">blank</b> to keep it unchanged. Only filled fields will be applied to all selected students.
+    </div>
+    <!-- Selected students preview -->
+    <div style="margin-bottom:14px;">
+      <div style="font-size:11px;color:var(--gold);font-weight:700;margin-bottom:6px;">Selected Students:</div>
+      <div id="bulkEditStudentList" style="max-height:110px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:12px;color:var(--offwhite);line-height:2;"></div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">School Name <span style="color:var(--gray);font-size:10px;">(leave blank = no change)</span></label>
+      <input type="text" class="form-input" id="bulkSchool" placeholder="e.g. Government Higher Secondary School">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Joining Date <span style="color:var(--gray);font-size:10px;">(leave blank = no change)</span></label>
+      <input type="text" class="form-input" id="bulkJoinDate" placeholder="DD/MM/YYYY">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Batch <span style="color:var(--gray);font-size:10px;">(leave blank = no change)</span></label>
+      <select class="form-select" id="bulkBatch">
+        <option value="">— No change —</option>
+      </select>
+    </div>
+    <button class="btn btn-primary" style="width:100%;padding:12px;" onclick="saveBulkEdit()">💾 Apply to Selected Students</button>
   </div>
 </div>
 
@@ -1543,6 +1602,8 @@ function convertEnquiryToStudent(id) {
 
   // Pre-fill the Add Student modal with enquiry data
   editStudId = null;
+  const bSel = document.getElementById('sBatch');
+  bSel.innerHTML = DB.batches.map(b => `<option>${escHtml(b)}</option>`).join('');
   document.getElementById('modalStudentTitle').textContent = '👥 Convert to Student';
   document.getElementById('sName').value    = '';          // student name — to be filled manually
   document.getElementById('sParent').value  = q.name  || ''; // enquiry person = parent/guardian
@@ -1553,7 +1614,7 @@ function convertEnquiryToStudent(id) {
   document.getElementById('sDob').value     = '';
   document.getElementById('sAgeAuto').textContent = '';
   document.getElementById('sJoinDate').value = todayDisplay();
-  renderBatchChipsInModal(DB.batches[0] || '');
+  if (DB.batches.length) bSel.value = DB.batches[0];
 
   // Show a note inside the modal about the source enquiry
   const noteEl = document.getElementById('convertFromEnqNote');
@@ -2616,31 +2677,11 @@ function calcAgeFromDob() {
   if (autoLbl) { autoLbl.textContent = '(auto)'; autoLbl.style.color='var(--gold)'; }
 }
 
-function renderBatchChipsInModal(selectedVal) {
-  const container = document.getElementById('sBatchChips');
-  const hiddenInput = document.getElementById('sBatch');
-  if (!container) return;
-  const current = selectedVal || DB.batches[0] || '';
-  hiddenInput.value = current;
-  if (!DB.batches.length) {
-    container.innerHTML = '<span style="font-size:12px;color:var(--gray);">No batches available. Add batches in Profile → Settings.</span>';
-    return;
-  }
-  container.innerHTML = DB.batches.map(b =>
-    `<div class="batch-chip ${b === current ? 'active' : ''}"
-          onclick="selectModalBatch('${escHtml(b)}', this)"
-          style="cursor:pointer;font-size:12px;">${escHtml(b)}</div>`
-  ).join('');
-}
-
-function selectModalBatch(batch, el) {
-  document.getElementById('sBatch').value = batch;
-  el.closest('#sBatchChips').querySelectorAll('.batch-chip').forEach(c => c.classList.remove('active'));
-  el.classList.add('active');
-}
-
 function openAddStudentModal(id=null) {
   editStudId = id;
+  // Populate batch dropdown
+  const bSel = document.getElementById('sBatch');
+  bSel.innerHTML = DB.batches.map(b => `<option>${escHtml(b)}</option>`).join('');
 
   if (id) {
     const s = DB.students.find(x => x.id === id);
@@ -2653,13 +2694,13 @@ function openAddStudentModal(id=null) {
     document.getElementById('sContact2').value = s.contact2 || '';
     document.getElementById('sAddress').value = s.address || '';
     document.getElementById('sJoinDate').value = s.joinDate || '';
-    renderBatchChipsInModal(s.batch || DB.batches[0] || '');
+    bSel.value = s.batch || DB.batches[0] || '';
   } else {
     document.getElementById('modalStudentTitle').textContent = 'Add Student';
     document.getElementById('sAge').value = ''; document.getElementById('sDob').value = ''; document.getElementById('sAgeAuto').textContent = '';
     ['sName','sAge','sDob','sParent','sContact','sContact2','sAddress'].forEach(f => document.getElementById(f).value = '');
     document.getElementById('sJoinDate').value = todayDisplay();
-    renderBatchChipsInModal(DB.batches[0] || '');
+    if (DB.batches.length) bSel.value = DB.batches[0];
     _convertingEnqId = null;
     const noteEl = document.getElementById('convertFromEnqNote');
     if (noteEl) noteEl.style.display = 'none';
@@ -3035,26 +3076,115 @@ function downloadStudents(fmt) {
   }
 }
 
+// ── Multi-select state ─────────────────────────────────────────────
+let selectedStudentIds = new Set();
+
+function toggleStudentSelect(id, cb) {
+  if (cb.checked) { selectedStudentIds.add(id); }
+  else { selectedStudentIds.delete(id); }
+  updateStudentSelectToolbar();
+}
+
+function updateStudentSelectToolbar() {
+  const toolbar = document.getElementById('studentSelectToolbar');
+  const label   = document.getElementById('selectedCountLabel');
+  const count   = selectedStudentIds.size;
+  if (toolbar) { toolbar.style.display = count > 0 ? 'flex' : 'none'; }
+  if (label)   label.textContent = count;
+}
+
+function selectAllStudents() {
+  document.querySelectorAll('.student-select-cb').forEach(cb => {
+    cb.checked = true;
+    selectedStudentIds.add(cb.dataset.id);
+  });
+  updateStudentSelectToolbar();
+}
+
+function clearStudentSelection() {
+  selectedStudentIds.clear();
+  document.querySelectorAll('.student-select-cb').forEach(cb => cb.checked = false);
+  updateStudentSelectToolbar();
+}
+
+function clearStudentFilters() {
+  const n = document.getElementById('filterStudentName');
+  const b = document.getElementById('filterStudentBatch');
+  const s = document.getElementById('filterStudentSchool');
+  if (n) n.value = '';
+  if (b) b.value = '';
+  if (s) s.value = '';
+  renderStudentList();
+}
+
+// Populate batch filter dropdown
+function populateStudentBatchFilter() {
+  const sel = document.getElementById('filterStudentBatch');
+  if (!sel) return;
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">All Batches</option>' +
+    DB.batches.map(b => `<option value="${escHtml(b)}"${cur===b?' selected':''}>${escHtml(b)}</option>`).join('');
+}
+
 function renderStudentList() {
-  const search = (document.getElementById('studentSearch')?.value || '').toLowerCase();
+  populateStudentBatchFilter();
+
+  const search       = (document.getElementById('studentSearch')?.value || '').toLowerCase();
+  const filterName   = (document.getElementById('filterStudentName')?.value || '').toLowerCase();
+  const filterBatch  = document.getElementById('filterStudentBatch')?.value || '';
+  const filterSchool = (document.getElementById('filterStudentSchool')?.value || '').toLowerCase();
   const batch = selectedBatch.student;
+
   let actives = getActiveStudents();
   let banned = getBannedStudents();
-  if (batch !== 'ALL') { actives = actives.filter(s => s.batch === batch); banned = banned.filter(s => s.batch === batch); }
+
+  // Batch chip filter
+  if (batch !== 'ALL') {
+    actives = actives.filter(s => s.batch === batch);
+    banned  = banned.filter(s => s.batch === batch);
+  }
+
+  // Global search bar
   if (search) {
     const f = s => s.name.toLowerCase().includes(search) || (s.contact||'').includes(search) || (s.parent||'').toLowerCase().includes(search);
     actives = actives.filter(f); banned = banned.filter(f);
   }
-  // Sort by today's attendance: Present → Absent → Leave/none
+
+  // Advanced name filter
+  if (filterName) {
+    const f = s => s.name.toLowerCase().includes(filterName);
+    actives = actives.filter(f); banned = banned.filter(f);
+  }
+  // Advanced batch filter
+  if (filterBatch) {
+    const f = s => (s.batch || '') === filterBatch;
+    actives = actives.filter(f); banned = banned.filter(f);
+  }
+  // Advanced school filter
+  if (filterSchool) {
+    const f = s => (s.address||'').toLowerCase().includes(filterSchool);
+    actives = actives.filter(f); banned = banned.filter(f);
+  }
+
+  // Sort by today's attendance
   const todayKey = todayStr();
   const todayAtt = DB.attendance[todayKey] || {};
   const attRank = s => { const v = todayAtt[s.id]; return v==='P'?0:v==='A'?1:2; };
   actives.sort((a, b) => attRank(a) - attRank(b) || a.name.localeCompare(b.name));
 
   let html = '';
-  const row = (s, isBanned, num) => `
-    <div class="card" style="margin-bottom:4px;padding:8px 10px;${isBanned?'opacity:.65;border-color:#dc262655;':''}">
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">
+  const row = (s, isBanned, num) => {
+    const isChecked = selectedStudentIds.has(s.id);
+    return `
+    <div class="card" style="margin-bottom:4px;padding:8px 10px;${isBanned?'opacity:.65;border-color:#dc262655;':''}${isChecked?'border-color:var(--accent2);background:var(--card2);':''}">
+      <div style="display:flex;align-items:flex-start;gap:8px;">
+        <!-- Checkbox -->
+        <label style="display:flex;align-items:center;padding-top:2px;flex-shrink:0;cursor:pointer;">
+          <input type="checkbox" class="student-select-cb" data-id="${s.id}"
+            ${isChecked?'checked':''}
+            onchange="toggleStudentSelect('${s.id}',this)"
+            style="width:17px;height:17px;accent-color:var(--accent2);cursor:pointer;flex-shrink:0;">
+        </label>
         <div style="display:flex;align-items:flex-start;gap:8px;flex:1;min-width:0;">
           <div style="flex-shrink:0;width:22px;height:22px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--gold);margin-top:1px;">${num}</div>
           <div style="flex:1;min-width:0;">
@@ -3081,6 +3211,7 @@ function renderStudentList() {
         </div>
       </div>
     </div>`;
+  };
 
   actives.forEach((s, i) => html += row(s, false, i + 1));
   if (banned.length) {
@@ -3089,6 +3220,64 @@ function renderStudentList() {
   }
   if (!html) html = `<div class="empty-state">No students found.</div>`;
   document.getElementById('studentListWrap').innerHTML = html;
+  updateStudentSelectToolbar();
+}
+
+// ── Bulk Edit ─────────────────────────────────────────────────────
+function openBulkEditModal() {
+  if (selectedStudentIds.size === 0) { showToast('No students selected','warn'); return; }
+
+  // Populate batch dropdown
+  const bSel = document.getElementById('bulkBatch');
+  bSel.innerHTML = '<option value="">— No change —</option>' +
+    DB.batches.map(b => `<option value="${escHtml(b)}">${escHtml(b)}</option>`).join('');
+
+  // Clear inputs
+  document.getElementById('bulkSchool').value = '';
+  document.getElementById('bulkJoinDate').value = '';
+
+  // Show selected students list
+  const label = document.getElementById('bulkEditCountLabel');
+  if (label) label.textContent = selectedStudentIds.size;
+
+  const listEl = document.getElementById('bulkEditStudentList');
+  if (listEl) {
+    const names = [...selectedStudentIds].map(id => {
+      const s = DB.students.find(x => x.id === id);
+      return s ? `<span style="display:inline-block;background:var(--accent);border-radius:4px;padding:1px 7px;margin:2px 3px 2px 0;font-size:11px;color:var(--gold);font-weight:600;">${escHtml(s.name)}</span>` : '';
+    }).filter(Boolean);
+    listEl.innerHTML = names.join('');
+  }
+
+  openModal('modalBulkEdit');
+}
+
+function saveBulkEdit() {
+  const school   = document.getElementById('bulkSchool').value.trim();
+  const joinDate = document.getElementById('bulkJoinDate').value.trim();
+  const batch    = document.getElementById('bulkBatch').value;
+
+  if (!school && !joinDate && !batch) {
+    showToast('Fill at least one field to apply','warn'); return;
+  }
+
+  const count = selectedStudentIds.size;
+  confirm_('✏️', 'Bulk Edit', `Apply changes to ${count} student(s)?`, () => {
+    selectedStudentIds.forEach(id => {
+      const idx = DB.students.findIndex(s => s.id === id);
+      if (idx < 0) return;
+      if (school)   DB.students[idx].address  = school;
+      if (joinDate) DB.students[idx].joinDate = joinDate;
+      if (batch)    DB.students[idx].batch    = batch;
+    });
+    addLog('student_bulk_edit', `Bulk edited ${count} student(s): ${[school&&'school',joinDate&&'joinDate',batch&&'batch'].filter(Boolean).join(', ')}`);
+    closeModal('modalBulkEdit');
+    scheduleFirebasePush();
+    selectedStudentIds.clear();
+    renderStudentList();
+    renderBatchChips('student');
+    showToast(`${count} student(s) updated ✓`, 'success');
+  });
 }
 
 // ----------------------------------------------------------------
