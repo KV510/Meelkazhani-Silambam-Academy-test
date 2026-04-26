@@ -5689,6 +5689,8 @@ function downloadFees(fmt) {
     (s.contact||'').includes(feeSearch) ||
     (s.batch||'').toLowerCase().includes(feeSearch)
   );
+
+  feeMonthKeys.forEach(fk => {
     const [fy, fm] = fk.split('-').map(Number);
     const feeData = DB.fees[fk] || {};
     const monthStudents = students.filter(s => isEnrolledOnDate(s, fy, fm, 0));
