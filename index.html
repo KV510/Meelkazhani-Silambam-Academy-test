@@ -644,19 +644,14 @@ body { font-family: 'Segoe UI', 'Noto Sans', Roboto, 'Arial Unicode MS', Arial, 
         </div>
       </div>
 
-      <!-- Date navigator — Row 1: Date | Month | Year -->
+      <!-- Date navigator — Month | Year only (date removed) -->
       <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:8px 10px;margin-bottom:8px;">
         <!-- Hidden selects for JS value storage -->
         <select id="attYear"  onchange="onAttFilterChange()" style="display:none;"></select>
         <select id="attMonth" onchange="onAttFilterChange()" style="display:none;"></select>
-        <!-- Row 1: DD | MMM YYYY -->
+        <select id="attDate"  onchange="onAttFilterChange()" style="display:none;"></select>
+        <!-- Row 1: MMM | YYYY -->
         <div style="display:flex;align-items:center;gap:4px;margin-bottom:6px;">
-          <!-- Date segment -->
-          <button class="arrow-btn" onclick="navAtt('date',-1)" style="width:26px;height:26px;flex-shrink:0;">‹</button>
-          <select id="attDate" onchange="onAttFilterChange()"
-            style="background:var(--card2);border:1px solid var(--border);border-radius:7px;color:var(--gold);font-size:12px;font-weight:700;padding:5px 3px;text-align:center;outline:none;flex:1;cursor:pointer;"></select>
-          <button class="arrow-btn" onclick="navAtt('date',1)" style="width:26px;height:26px;flex-shrink:0;">›</button>
-          <div style="width:1px;height:20px;background:var(--border);flex-shrink:0;"></div>
           <!-- Month segment -->
           <button class="arrow-btn" onclick="navAtt('month',-1)" style="width:26px;height:26px;flex-shrink:0;">‹</button>
           <select id="attMonthDisplay" onchange="onAttMonthDisplayChange()"
@@ -685,10 +680,41 @@ body { font-family: 'Segoe UI', 'Noto Sans', Roboto, 'Arial Unicode MS', Arial, 
         </div>
       </div>
 
-      <div class="search-wrap">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <input type="text" class="search-input" placeholder="Search student…" id="attSearch" oninput="renderAttendance()">
+      <!-- Day selector: only visible in Day view -->
+      <div id="attDayRow" style="display:flex;align-items:center;gap:4px;margin-bottom:8px;">
+        <button class="arrow-btn" onclick="navAtt('date',-1)" style="width:26px;height:26px;flex-shrink:0;">‹</button>
+        <select id="attDateDisplay" onchange="onAttDateDisplayChange()"
+          style="background:var(--card2);border:1px solid var(--border);border-radius:7px;color:var(--gold);font-size:12px;font-weight:700;padding:5px 3px;text-align:center;outline:none;flex:1;cursor:pointer;"></select>
+        <button class="arrow-btn" onclick="navAtt('date',1)" style="width:26px;height:26px;flex-shrink:0;">›</button>
       </div>
+
+      <!-- Collapsible Filter (like student filter) -->
+      <div style="margin-bottom:8px;">
+        <button onclick="toggleAttFilter()" id="attFilterToggleBtn"
+          style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--card);border:1px solid var(--border);border-radius:10px;color:var(--offwhite);font-size:12px;font-weight:700;cursor:pointer;transition:border-color .2s;">
+          <span style="display:flex;align-items:center;gap:6px;">
+            <span id="attFilterActiveIndicator" style="display:none;width:7px;height:7px;border-radius:50%;background:var(--gold);flex-shrink:0;"></span>
+            🔽 Filters
+          </span>
+          <span id="attFilterChevron" style="font-size:11px;color:var(--gray);transition:transform .2s;">▼</span>
+        </button>
+        <div id="attFilterBody" style="display:none;background:var(--card);border:1px solid var(--border);border-top:none;border-radius:0 0 10px 10px;padding:10px 12px;">
+          <div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:8px;">
+            <input type="text" class="filter-select" id="attSearchFilter" placeholder="Search student name…" oninput="renderAttendance();updateAttFilterIndicator()" style="flex:1;min-width:120px;">
+          </div>
+          <!-- Present/Absent/All filter — only relevant in Day view -->
+          <div id="attStatusFilterRow" style="margin-bottom:8px;">
+            <div style="font-size:10px;color:var(--gray);margin-bottom:5px;">Filter by Status (Day view):</div>
+            <div style="display:flex;gap:6px;">
+              <button id="attStatusAll" onclick="setAttStatusFilter('all')" style="flex:1;padding:5px 0;border-radius:7px;border:1px solid var(--accent2);background:var(--accent2);color:#fff;font-size:11px;font-weight:700;cursor:pointer;">All</button>
+              <button id="attStatusPresent" onclick="setAttStatusFilter('present')" style="flex:1;padding:5px 0;border-radius:7px;border:1px solid var(--border);background:var(--card2);color:#4ade80;font-size:11px;font-weight:700;cursor:pointer;">✅ Present</button>
+              <button id="attStatusAbsent" onclick="setAttStatusFilter('absent')" style="flex:1;padding:5px 0;border-radius:7px;border:1px solid var(--border);background:var(--card2);color:#f87171;font-size:11px;font-weight:700;cursor:pointer;">❌ Absent</button>
+            </div>
+          </div>
+          <button class="btn btn-xs btn-outline" onclick="clearAttFilters()" style="width:100%;justify-content:center;">✕ Clear Filters</button>
+        </div>
+      </div>
+
       <div class="batch-chips" id="attBatchChips"></div>
       <div id="attSummaryBar"></div>
       <div id="attListWrap" style="flex:1;overflow-y:auto;overflow-x:hidden;min-height:0;padding-bottom:8px;"></div>
@@ -2665,6 +2691,7 @@ function renderBatchChips(page) {
   const cur = selectedBatch[page] || 'ALL';
   // Count per batch
   const activeStudents = getActiveStudents();
+  const bannedStudents = getBannedStudents();
   const counts = {};
   DB.batches.forEach(b => counts[b] = activeStudents.filter(s => s.batch === b).length);
 
@@ -2672,6 +2699,10 @@ function renderBatchChips(page) {
   DB.batches.forEach(b => {
     html += `<div class="batch-chip ${cur===b?'active':''}" onclick="selectBatch('${page}','${b}',this)">${b} (${counts[b]||0})</div>`;
   });
+  // Add Blocked chip only on student page
+  if (page === 'student') {
+    html += `<div class="batch-chip ${cur==='BLOCKED'?'active':''}" onclick="selectBatch('${page}','BLOCKED',this)" style="${cur==='BLOCKED'?'background:#dc2626;border-color:#dc2626;':'color:#f87171;border-color:#dc262644;'}">🚫 Blocked (${bannedStudents.length})</div>`;
+  }
   el.innerHTML = html;
 }
 function selectBatch(page, batch, el) {
@@ -3208,8 +3239,10 @@ function updateStudentFilterIndicator() {
 function syncAttDisplaySelects() {
   const ySel = document.getElementById('attYear');
   const mSel = document.getElementById('attMonth');
+  const dSel = document.getElementById('attDate');
   const yDisp = document.getElementById('attYearDisplay');
   const mDisp = document.getElementById('attMonthDisplay');
+  const dDisp = document.getElementById('attDateDisplay');
   if (!ySel || !mSel || !yDisp || !mDisp) return;
   // Sync year display
   yDisp.innerHTML = '';
@@ -3227,6 +3260,16 @@ function syncAttDisplaySelects() {
     if (o.selected) opt.selected = true;
     mDisp.appendChild(opt);
   });
+  // Sync date display
+  if (dSel && dDisp) {
+    dDisp.innerHTML = '';
+    Array.from(dSel.options).forEach(o => {
+      const opt = document.createElement('option');
+      opt.value = o.value; opt.textContent = o.textContent;
+      if (o.selected) opt.selected = true;
+      dDisp.appendChild(opt);
+    });
+  }
 }
 function onAttMonthDisplayChange() {
   const v = document.getElementById('attMonthDisplay')?.value;
@@ -3239,6 +3282,51 @@ function onAttYearDisplayChange() {
   const ySel = document.getElementById('attYear');
   if (ySel && v) { Array.from(ySel.options).forEach(o => o.selected = o.value === v); }
   onAttFilterChange();
+}
+function onAttDateDisplayChange() {
+  const v = document.getElementById('attDateDisplay')?.value;
+  const dSel = document.getElementById('attDate');
+  if (dSel && v) dSel.value = v;
+  renderAttendance();
+}
+
+// Attendance status filter (all/present/absent)
+let attStatusFilter = 'all'; // 'all' | 'present' | 'absent'
+function setAttStatusFilter(val) {
+  attStatusFilter = val;
+  ['All','Present','Absent'].forEach(v => {
+    const btn = document.getElementById('attStatus' + v);
+    if (!btn) return;
+    const active = val === v.toLowerCase();
+    btn.style.background  = active ? (v==='Present'?'#16a34a':v==='Absent'?'#dc2626':'var(--accent2)') : 'var(--card2)';
+    btn.style.color       = active ? '#fff' : (v==='Present'?'#4ade80':v==='Absent'?'#f87171':'var(--offwhite)');
+    btn.style.borderColor = active ? (v==='Present'?'#16a34a':v==='Absent'?'#dc2626':'var(--accent2)') : 'var(--border)';
+  });
+  updateAttFilterIndicator();
+  renderAttendance();
+}
+function toggleAttFilter() {
+  const body    = document.getElementById('attFilterBody');
+  const chevron = document.getElementById('attFilterChevron');
+  const btn     = document.getElementById('attFilterToggleBtn');
+  if (!body) return;
+  const open = body.style.display === 'block';
+  body.style.display = open ? 'none' : 'block';
+  if (chevron) chevron.style.transform = open ? '' : 'rotate(180deg)';
+  if (btn) btn.style.borderRadius = open ? '10px' : '10px 10px 0 0';
+}
+function updateAttFilterIndicator() {
+  const n = (document.getElementById('attSearchFilter')?.value || '').trim();
+  const dot = document.getElementById('attFilterActiveIndicator');
+  if (dot) dot.style.display = (n || attStatusFilter !== 'all') ? 'inline-block' : 'none';
+}
+function clearAttFilters() {
+  const n = document.getElementById('attSearchFilter');
+  if (n) n.value = '';
+  attStatusFilter = 'all';
+  setAttStatusFilter('all');
+  updateAttFilterIndicator();
+  renderAttendance();
 }
 
 // ── Attendance view toggle (Day / Month / Year) ───────────────────
@@ -3253,6 +3341,12 @@ function setAttView(view) {
     btn.style.color       = active ? '#fff' : 'var(--offwhite)';
     btn.style.borderColor = active ? 'var(--accent2)' : 'var(--border)';
   });
+  // Show/hide day selector row
+  const dayRow = document.getElementById('attDayRow');
+  if (dayRow) dayRow.style.display = view === 'day' ? 'flex' : 'none';
+  // Show/hide status filter (only relevant in day view)
+  const statusRow = document.getElementById('attStatusFilterRow');
+  if (statusRow) statusRow.style.display = view === 'day' ? '' : 'none';
   renderAttendance();
 }
 
@@ -3374,7 +3468,9 @@ function renderStudentList() {
   let banned = getBannedStudents();
 
   // Batch chip filter
-  if (batch !== 'ALL') {
+  if (batch === 'BLOCKED') {
+    actives = []; // show only blocked students
+  } else if (batch !== 'ALL') {
     actives = actives.filter(s => s.batch === batch);
     banned  = banned.filter(s => s.batch === batch);
   }
@@ -3539,18 +3635,27 @@ function initAttFilters() {
   updateDateOptions();
   updateAttNavLabel();
   syncAttDisplaySelects();
+  // Init day row visibility (day view is default)
+  const dayRow = document.getElementById('attDayRow');
+  if (dayRow) dayRow.style.display = 'flex';
+  const statusRow = document.getElementById('attStatusFilterRow');
+  if (statusRow) statusRow.style.display = '';
 }
 function updateDateOptions() {
   const y = parseInt(document.getElementById('attYear').value);
   const m = parseInt(document.getElementById('attMonth').value);
   const dSel = document.getElementById('attDate');
+  const dDisp = document.getElementById('attDateDisplay');
   const cur = parseInt(dSel.value) || new Date().getDate();
   const maxD = daysInMonth(y, m);
   const DAYS_SHORT = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   dSel.innerHTML = '';
+  if (dDisp) dDisp.innerHTML = '';
   for (let d = 1; d <= maxD; d++) {
     const dayName = DAYS_SHORT[new Date(y, m-1, d).getDay()];
-    dSel.innerHTML += `<option value="${d}"${d===Math.min(cur,maxD)?' selected':''}>${pad(d)} ${dayName}</option>`;
+    const txt = `${pad(d)} ${dayName}`;
+    dSel.innerHTML += `<option value="${d}"${d===Math.min(cur,maxD)?' selected':''}>${txt}</option>`;
+    if (dDisp) dDisp.innerHTML += `<option value="${d}"${d===Math.min(cur,maxD)?' selected':''}>${txt}</option>`;
   }
 }
 function onAttFilterChange() { updateDateOptions(); updateAttNavLabel(); syncAttDisplaySelects(); renderAttendance(); }
@@ -3676,7 +3781,7 @@ function renderAttendance() {
   const batch = selectedBatch.att;
 
   // Get students: only active, filtered by batch, search, filter by enrollment date
-  const attSearch = (document.getElementById('attSearch')?.value || '').toLowerCase();
+  const attSearch = (document.getElementById('attSearchFilter')?.value || '').toLowerCase();
   let students = getActiveStudents();
   if (batch !== 'ALL') students = students.filter(s => s.batch === batch);
   if (attSearch) students = students.filter(s => s.name.toLowerCase().includes(attSearch) || (s.contact||'').includes(attSearch));
@@ -3719,10 +3824,16 @@ function renderAttendance() {
       </div>
     </div>`;
     html += `<div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;">`;
-    if (!enrolled.length) {
-      html += `<div class="empty-state">No students enrolled on this date.</div>`;
+
+    // Apply status filter for day view
+    let displayEnrolled = enrolled;
+    if (attStatusFilter === 'present') displayEnrolled = enrolled.filter(s => dayData[s.id] === 'P');
+    else if (attStatusFilter === 'absent') displayEnrolled = enrolled.filter(s => dayData[s.id] === 'A');
+
+    if (!displayEnrolled.length) {
+      html += `<div class="empty-state">${attStatusFilter !== 'all' ? 'No students match this filter.' : 'No students enrolled on this date.'}</div>`;
     } else {
-      enrolled.forEach(s => {
+      displayEnrolled.forEach(s => {
         const v = dayData[s.id];
         html += `<div class="att-row">
           <div class="att-name">${escHtml(s.name)}<br><span style="font-size:10px;color:var(--gray);">${escHtml(s.batch||'')}</span></div>
@@ -4051,6 +4162,14 @@ function renderFees() {
 
   let students = getActiveStudents();
   if (batch !== 'ALL') students = students.filter(s => s.batch === batch);
+
+  // Apply fee search filter
+  const feeSearch = (document.getElementById('feeSearch')?.value || '').toLowerCase();
+  if (feeSearch) students = students.filter(s =>
+    s.name.toLowerCase().includes(feeSearch) ||
+    (s.contact||'').includes(feeSearch) ||
+    (s.batch||'').toLowerCase().includes(feeSearch)
+  );
 
   // For year mode: show all months grouped with paid/unpaid sections
   if (feeFilterMode === 'year' && feeMonthKeys.length > 1) {
@@ -5482,14 +5601,19 @@ function downloadAttendance(fmt) {
   const d = document.getElementById('attDate').value;
   const viewType = document.getElementById('attViewType').value;
   const batch = selectedBatch.att;
+  const attSearch = (document.getElementById('attSearchFilter')?.value || '').toLowerCase();
   let students = getActiveStudents();
   if (batch !== 'ALL') students = students.filter(s => s.batch===batch);
+  if (attSearch) students = students.filter(s => s.name.toLowerCase().includes(attSearch) || (s.contact||'').includes(attSearch));
 
   if (viewType === 'day') {
     const dk = `${y}-${pad(m)}-${pad(d)}`;
     const dayData = DB.attendance[dk] || {};
     const classDay = isClassDay(dk);
-    const enrolled = students.filter(s => isEnrolledOnDate(s, parseInt(y), parseInt(m), parseInt(d)));
+    let enrolled = students.filter(s => isEnrolledOnDate(s, parseInt(y), parseInt(m), parseInt(d)));
+    // Apply status filter
+    if (attStatusFilter === 'present') enrolled = enrolled.filter(s => dayData[s.id] === 'P');
+    else if (attStatusFilter === 'absent') enrolled = enrolled.filter(s => dayData[s.id] === 'A');
     const headers = ['Name','Batch','Status'];
     const rows = enrolled.map(s => {
       const v = dayData[s.id];
@@ -5500,10 +5624,31 @@ function downloadAttendance(fmt) {
       else status = 'Leave';
       return [s.name, s.batch||'', status];
     });
-    const title = `Attendance — ${pad(d)} ${MONTHS[parseInt(m)-1]} ${y}`;
+    const filterLabel = attStatusFilter !== 'all' ? ` (${attStatusFilter})` : '';
+    const title = `Attendance — ${pad(d)} ${MONTHS[parseInt(m)-1]} ${y}${filterLabel}`;
     if (fmt==='pdf') genPDF(`Att_${pad(d)}_${MONTHS[parseInt(m)-1]}_${y}`, headers, rows, title);
     else genXL(`Att_${pad(d)}_${MONTHS[parseInt(m)-1]}_${y}`, headers, rows);
+  } else if (viewType === 'year') {
+    // Year view export
+    const fy = parseInt(y);
+    const headers = ['Month','Name','Batch','Present Days','Absent Days'];
+    const rows = [];
+    for (let mo = 1; mo <= 12; mo++) {
+      const prefix = `${fy}-${pad(mo)}-`;
+      const classDays = Object.keys(DB.attendance).filter(k=>k.startsWith(prefix)&&isClassDay(k)).sort();
+      if (!classDays.length) continue;
+      const enrolled = students.filter(s => isEnrolledOnDate(s, fy, mo, 0));
+      enrolled.forEach(s => {
+        let p=0, a=0;
+        classDays.forEach(dk => { const v=(DB.attendance[dk]||{})[s.id]; if(v==='P')p++; else if(v==='A')a++; });
+        rows.push([MONTHS[mo-1]+' '+fy, s.name, s.batch||'', p, a]);
+      });
+    }
+    const title = `Attendance — Year ${fy}`;
+    if (fmt==='pdf') genPDF(`Att_Year_${fy}`, headers, rows, title);
+    else genXL(`Att_Year_${fy}`, headers, rows);
   } else {
+    // Month view
     const prefix = `${y}-${pad(m)}-`;
     const classDays = Object.keys(DB.attendance).filter(k=>k.startsWith(prefix)&&isClassDay(k)).sort();
     const enrolled = students.filter(s => isEnrolledOnDate(s, parseInt(y), parseInt(m), 0));
@@ -5538,8 +5683,12 @@ function downloadFees(fmt) {
 
   let students = getActiveStudents();
   if (batch !== 'ALL') students = students.filter(s => s.batch === batch);
-
-  feeMonthKeys.forEach(fk => {
+  const feeSearch = (document.getElementById('feeSearch')?.value || '').toLowerCase();
+  if (feeSearch) students = students.filter(s =>
+    s.name.toLowerCase().includes(feeSearch) ||
+    (s.contact||'').includes(feeSearch) ||
+    (s.batch||'').toLowerCase().includes(feeSearch)
+  );
     const [fy, fm] = fk.split('-').map(Number);
     const feeData = DB.fees[fk] || {};
     const monthStudents = students.filter(s => isEnrolledOnDate(s, fy, fm, 0));
