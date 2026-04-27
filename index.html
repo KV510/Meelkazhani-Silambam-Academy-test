@@ -135,12 +135,12 @@ input,select,textarea{font-family:var(--font);}
 .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin-bottom:8px;}
 
 /* STATS GRID */
-.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;}
-.stat-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:6px 8px;display:flex;align-items:center;gap:7px;}
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:10px 10px;}
 .stat-card-info{flex:1;min-width:0;}
-.stat-icon{width:22px;height:22px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;}
-.stat-label{font-size:10px;color:var(--gray);margin-bottom:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.stat-val{font-size:17px;font-weight:700;line-height:1;}
+.stat-icon{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:16px;margin-bottom:4px;}
+.stat-label{font-size:11px;color:var(--gray);margin-bottom:2px;}
+.stat-val{font-size:22px;font-weight:700;}
 
 /* SECTION TITLE */
 .section-title{font-size:15px;font-weight:700;color:var(--gold);margin-bottom:8px;display:flex;align-items:center;gap:5px;}
@@ -400,7 +400,7 @@ body { font-family: 'Segoe UI', 'Noto Sans', Roboto, 'Arial Unicode MS', Arial, 
   <div class="content">
 
     <!-- ===== HOME ===== -->
-    <div class="page active" id="pageHome" style="display:flex;flex-direction:column;overflow:hidden;padding-bottom:0;">
+    <div class="page active" id="pageHome" style="display:flex;flex-direction:column;overflow-y:auto;padding-bottom:72px;">
       <!-- Dashboard Title + Month/Year Filter -->
       <div style="margin-bottom:12px;">
         <div class="section-title" style="margin-bottom:8px;">📊 Dashboard</div>
@@ -420,31 +420,23 @@ body { font-family: 'Segoe UI', 'Noto Sans', Roboto, 'Arial Unicode MS', Arial, 
       <div class="stats-grid" style="flex-shrink:0;">
         <div class="stat-card">
           <div class="stat-icon" style="background:#2563eb22;">👥</div>
-          <div class="stat-card-info">
-            <div class="stat-label">Total Students</div>
-            <div class="stat-val" style="color:#60a5fa;" id="statTotal">0</div>
-          </div>
+          <div class="stat-label">Total Students</div>
+          <div class="stat-val" style="color:#60a5fa;" id="statTotal">0</div>
         </div>
         <div class="stat-card" id="statCollectedCard">
           <div class="stat-icon" style="background:#16a34a22;">✅</div>
-          <div class="stat-card-info">
-            <div class="stat-label">Fees Collected</div>
-            <div class="stat-val" style="color:#4ade80;font-size:14px;" id="statCollected">0</div>
-          </div>
+          <div class="stat-label">Fees Collected</div>
+          <div class="stat-val" style="color:#4ade80;font-size:16px;" id="statCollected">0</div>
         </div>
         <div class="stat-card">
           <div class="stat-icon" style="background:#dc262622;">⚠️</div>
-          <div class="stat-card-info">
-            <div class="stat-label">Fee Pending</div>
-            <div class="stat-val" style="color:#f87171;" id="statPending">0</div>
-          </div>
+          <div class="stat-label">Fee Pending</div>
+          <div class="stat-val" style="color:#f87171;" id="statPending">0</div>
         </div>
-        <div class="stat-card" onclick="showStrengthStudents()" style="cursor:pointer;" title="Click to see student strength">
-          <div class="stat-icon" style="background:#d9770622;">💪</div>
-          <div class="stat-card-info">
-            <div class="stat-label" id="statJoinedLabel">Students</div>
-            <div class="stat-val" style="color:#fb923c;" id="statTodayPresent">0</div>
-          </div>
+        <div class="stat-card" onclick="showJoinedStudents()" style="cursor:pointer;" title="Click to see joined students">
+          <div class="stat-icon" style="background:#d9770622;">🆕</div>
+          <div class="stat-label" id="statJoinedLabel">Joined</div>
+          <div class="stat-val" style="color:#fb923c;" id="statTodayPresent">0</div>
         </div>
       </div>
 
@@ -458,49 +450,16 @@ body { font-family: 'Segoe UI', 'Noto Sans', Roboto, 'Arial Unicode MS', Arial, 
       <div id="pendingList" style="display:none;"></div>
       <div id="prevMonthLabel" style="display:none;"></div>
       <div id="prevMonthPending" style="display:none;"></div>
-
-      <!-- Chart Section -->
-      <div class="card" style="padding:10px 10px 8px;flex:1;display:flex;flex-direction:column;min-height:0;margin-bottom:0;">
-        <!-- Row 1: Title -->
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;flex-shrink:0;">
-          <div class="section-title" style="margin-bottom:0;font-size:13px;" id="dashChartTitle">📊 Monthly Overview</div>
-        </div>
-        <!-- Row 2: Mode toggle + Range controls -->
-        <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;flex-shrink:0;flex-wrap:wrap;">
-          <!-- Mode toggle -->
-          <div style="display:flex;gap:3px;background:var(--royal2);border-radius:8px;padding:3px;flex-shrink:0;">
-            <button id="chartBtnPresent" onclick="setDashChartMode('present')"
-              style="padding:3px 8px;border-radius:5px;border:none;font-size:10px;font-weight:700;cursor:pointer;background:var(--accent2);color:#fff;transition:all .15s;">Attendance</button>
-            <button id="chartBtnJoined" onclick="setDashChartMode('joined')"
-              style="padding:3px 8px;border-radius:5px;border:none;font-size:10px;font-weight:700;cursor:pointer;background:transparent;color:var(--gray);transition:all .15s;">Strength</button>
-          </div>
-          <!-- Range: months count -->
-          <div style="display:flex;align-items:center;gap:3px;flex-shrink:0;">
-            <span style="font-size:9px;color:var(--gray);">Months:</span>
-            <select id="chartRangeMonths" onchange="renderDashChart()"
-              style="background:var(--card2);border:1px solid var(--border);border-radius:6px;color:var(--gold);font-size:10px;font-weight:700;padding:3px 4px;outline:none;cursor:pointer;">
-              <option value="3">3</option>
-              <option value="6" selected>6</option>
-              <option value="9">9</option>
-              <option value="12">12</option>
-            </select>
-          </div>
-          <!-- Year range hidden, default 1 year -->
-          <select id="chartRangeYears" style="display:none;">
-            <option value="1" selected>1</option>
-          </select>
-        </div>
-        <!-- Bar chart canvas area -->
-        <div style="position:relative;width:100%;overflow-x:auto;flex:1;min-height:0;">
-          <canvas id="dashBarChart" style="width:100%;display:block;max-height:100%;"></canvas>
-        </div>
-        <!-- Legend -->
-        <div style="display:flex;gap:12px;justify-content:center;margin-top:4px;font-size:10px;color:var(--gray);flex-shrink:0;" id="dashChartLegendWrap">
-          <span id="dashChartLegend1" style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;border-radius:2px;background:#22c55e;display:inline-block;"></span>Attended</span>
-          <span id="dashChartLegend2" style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;border-radius:2px;background:#f97316;display:inline-block;"></span>Not Attended</span>
-          <span id="dashChartLegendAvg" style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:2px;background:#fff;display:inline-block;"></span>Avg</span>
-        </div>
-      </div>
+      <!-- Chart canvas hidden but kept for JS compatibility -->
+      <canvas id="dashBarChart" style="display:none;"></canvas>
+      <select id="chartRangeMonths" style="display:none;"><option value="6" selected>6</option></select>
+      <select id="chartRangeYears" style="display:none;"><option value="1" selected>1</option></select>
+      <div id="dashChartTitle" style="display:none;"></div>
+      <div id="dashChartLegend1" style="display:none;"></div>
+      <div id="dashChartLegend2" style="display:none;"></div>
+      <div id="dashChartLegendAvg" style="display:none;"></div>
+      <button id="chartBtnPresent" style="display:none;"></button>
+      <button id="chartBtnJoined" style="display:none;"></button>
     </div>
 
     <!-- ===== CHART MAXIMIZE PAGE ===== -->
@@ -2691,6 +2650,11 @@ function renderBatchChips(page) {
   DB.batches.forEach(b => {
     html += `<div class="batch-chip ${cur===b?'active':''}" onclick="selectBatch('${page}','${b}',this)">${b} (${counts[b]||0})</div>`;
   });
+  // For students page: add a "Dropped" chip at the end to filter banned students
+  if (page === 'student') {
+    const droppedCount = getBannedStudents().length;
+    html += `<div class="batch-chip ${cur==='__DROPPED__'?'active':''}" onclick="selectBatch('${page}','__DROPPED__',this)" style="${cur==='__DROPPED__'?'':'border-color:#ef444455;color:#f87171;'}">🚫 Dropped (${droppedCount})</div>`;
+  }
   el.innerHTML = html;
 }
 function selectBatch(page, batch, el) {
@@ -3417,7 +3381,10 @@ function renderStudentList() {
   let banned = getBannedStudents();
 
   // Batch chip filter
-  if (batch !== 'ALL') {
+  if (batch === '__DROPPED__') {
+    // Show only dropped/banned students — hide all actives
+    actives = [];
+  } else if (batch !== 'ALL') {
     actives = actives.filter(s => s.batch === batch);
     banned  = banned.filter(s => s.batch === batch);
   }
@@ -4456,13 +4423,19 @@ function loadDashboard() {
 
   document.getElementById('dashMonthLabel').textContent = MONTHS[m-1] + ' ' + y;
   const joinedLbl = document.getElementById('statJoinedLabel');
-  if (joinedLbl) joinedLbl.textContent = 'Strength';
+  if (joinedLbl) joinedLbl.textContent = 'Joined (' + MONTHS[m-1].substring(0,3) + ')';
 
   const actives = getActiveStudents();
-  const blocked = getBannedStudents();
   document.getElementById('statTotal').textContent = actives.length;
-  // Strength tile: show total enrolled (active) + blocked count
-  document.getElementById('statTodayPresent').textContent = actives.length + blocked.length;
+
+  // Joined tile: students who joined in the selected month
+  const joinedThisMonth = actives.filter(s => {
+    if (!s.joinDate) return false;
+    const jd = parseDate(s.joinDate);
+    if (!jd) return false;
+    return jd.getFullYear() === y && (jd.getMonth() + 1) === m;
+  });
+  document.getElementById('statTodayPresent').textContent = joinedThisMonth.length;
 
   // Monthly attendance summary (all class days in the selected month)
   const prefix = `${y}-${pad(m)}-`;
@@ -4484,8 +4457,6 @@ function loadDashboard() {
   document.getElementById('dashAbsent').textContent = totalAbsent;
   document.getElementById('dashLeave').textContent = totalLeave;
   document.getElementById('dashHoliday').textContent = classDays.length;
-
-  // Strength tile already set above (active + blocked)
 
   // Selected month fees
   const feeData = DB.fees[fk] || {};
@@ -4979,26 +4950,20 @@ function _drawHorizontalBars(canvas, data, mode) {
   }
 }
 
-function showStrengthStudents() {
+function showJoinedStudents() {
   const m = parseInt(document.getElementById('dashMonth').value);
   const y = parseInt(document.getElementById('dashYear').value);
   const actives = getActiveStudents();
-  const blocked = getBannedStudents();
   const joined = actives.filter(s => {
     if (!s.joinDate) return false;
     const jd = parseDate(s.joinDate);
     return jd && jd.getFullYear() === y && (jd.getMonth() + 1) === m;
   });
   document.getElementById('modalJoinedTitle').textContent =
-    'Students Strength — ' + MONTHS[m-1] + ' ' + y;
-  document.getElementById('modalJoinedListWrap').innerHTML =
-    `<div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
-      <span class="badge badge-blue">👥 ${actives.length} Active</span>
-      <span class="badge badge-red">🚫 ${blocked.length} Blocked</span>
-      ${joined.length ? `<span class="badge badge-orange">🆕 ${joined.length} Joined this month</span>` : ''}
-    </div>` +
-    (joined.length ? `<div style="font-size:11px;color:var(--gold);font-weight:700;margin-bottom:6px;">Joined this month:</div>
-    <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:10px;">` +
+    'Joined in ' + MONTHS[m-1] + ' ' + y + ' (' + joined.length + ')';
+  document.getElementById('modalJoinedListWrap').innerHTML = joined.length
+    ? `<div style="font-size:11px;color:var(--gray);padding:0 2px 8px;">Students who joined this month:</div>` +
+      `<div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;">` +
       joined.map((s, i) =>
         `<div class="att-row" style="${i < joined.length-1 ? '' : 'border-bottom:none;'}">
           <div>
@@ -5009,20 +4974,10 @@ function showStrengthStudents() {
             </div>
           </div>
         </div>`
-      ).join('') + `</div>` : '') +
-    (blocked.length ? `<div style="font-size:11px;color:#f87171;font-weight:700;margin-bottom:6px;">Blocked students:</div>
-    <div style="background:var(--card);border:1px solid #ef444433;border-radius:var(--radius);overflow:hidden;">` +
-      blocked.map((s, i) =>
-        `<div class="att-row" style="${i < blocked.length-1 ? '' : 'border-bottom:none;'}">
-          <div class="att-name" style="color:var(--gray);">${escHtml(s.name)}
-            <span style="font-size:10px;color:var(--graydk);font-weight:400;"> · ${escHtml(s.batch||'')}</span>
-          </div>
-        </div>`
-      ).join('') + `</div>` : '<div class="empty-state">No blocked students.</div>');
+      ).join('') + `</div>`
+    : '<div class="empty-state">No students joined this month.</div>';
   openModal('modalJoinedList');
 }
-
-function showJoinedStudents() { showStrengthStudents(); }
 
 // ----------------------------------------------------------------
 // PROFILE
