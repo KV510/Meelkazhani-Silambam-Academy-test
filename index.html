@@ -462,29 +462,31 @@ body { font-family: 'Segoe UI', 'Noto Sans', Roboto, 'Arial Unicode MS', Arial, 
 
       <!-- INLINE BAR CHART TILE -->
       <div class="card" style="margin-bottom:10px;padding:10px 10px 8px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:6px;">
-          <div style="font-size:13px;font-weight:700;color:var(--gold);" id="homeTileChartTitle">📊 Attendance</div>
-          <div style="display:flex;gap:3px;background:var(--royal);border-radius:8px;padding:3px;flex-shrink:0;">
-            <button id="homeTileBtnAtt" onclick="setHomeTileMode('present')"
-              style="padding:4px 10px;border-radius:6px;border:none;font-size:10px;font-weight:700;cursor:pointer;background:var(--accent2);color:#fff;transition:all .15s;">Attendance</button>
-            <button id="homeTileBtnStr" onclick="setHomeTileMode('joined')"
-              style="padding:4px 10px;border-radius:6px;border:none;font-size:10px;font-weight:700;cursor:pointer;background:transparent;color:var(--gray);transition:all .15s;">Strength</button>
+        <!-- Row 1: title + mode toggle + months selector -->
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;flex-wrap:wrap;gap:5px;">
+          <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;">
+            <div style="font-size:13px;font-weight:700;color:var(--gold);" id="homeTileChartTitle">📊 Attendance</div>
+            <!-- Legend dots inline with title -->
+            <span style="display:flex;align-items:center;gap:3px;font-size:10px;color:var(--gray);"><span id="homeTileLeg1Dot" style="width:9px;height:9px;border-radius:2px;background:#22c55e;display:inline-block;"></span><span id="homeTileLeg1Text">Present</span></span>
+            <span style="display:flex;align-items:center;gap:3px;font-size:10px;color:var(--gray);"><span id="homeTileLeg2Dot" style="width:9px;height:9px;border-radius:2px;background:#f97316;display:inline-block;"></span><span id="homeTileLeg2Text">Absent</span></span>
           </div>
-          <div style="display:flex;align-items:center;gap:4px;flex-shrink:0;">
-            <span style="font-size:10px;color:var(--gray);">Last</span>
+          <div style="display:flex;align-items:center;gap:5px;flex-shrink:0;">
+            <!-- Mode toggle -->
+            <div style="display:flex;gap:2px;background:var(--royal);border-radius:7px;padding:2px;">
+              <button id="homeTileBtnAtt" onclick="setHomeTileMode('present')"
+                style="padding:3px 9px;border-radius:5px;border:none;font-size:10px;font-weight:700;cursor:pointer;background:var(--accent2);color:#fff;transition:all .15s;">Att</button>
+              <button id="homeTileBtnStr" onclick="setHomeTileMode('joined')"
+                style="padding:3px 9px;border-radius:5px;border:none;font-size:10px;font-weight:700;cursor:pointer;background:transparent;color:var(--gray);transition:all .15s;">Str</button>
+            </div>
+            <!-- Months selector -->
             <select id="homeTileMonths" onchange="renderHomeTileChart()"
-              style="background:var(--card2);border:1px solid var(--border);border-radius:6px;color:var(--gold);font-size:11px;font-weight:700;padding:4px 5px;outline:none;cursor:pointer;">
-              <option value="3">3 mo</option>
-              <option value="6" selected>6 mo</option>
-              <option value="9">9 mo</option>
-              <option value="12">12 mo</option>
+              style="background:var(--card2);border:1px solid var(--border);border-radius:6px;color:var(--gold);font-size:11px;font-weight:700;padding:3px 5px;outline:none;cursor:pointer;">
+              <option value="3">3mo</option>
+              <option value="6" selected>6mo</option>
+              <option value="9">9mo</option>
+              <option value="12">12mo</option>
             </select>
           </div>
-        </div>
-        <div style="display:flex;gap:12px;margin-bottom:6px;font-size:10px;flex-wrap:wrap;">
-          <span style="display:flex;align-items:center;gap:4px;"><span id="homeTileLeg1Dot" style="width:10px;height:10px;border-radius:2px;background:#22c55e;display:inline-block;flex-shrink:0;"></span><span id="homeTileLeg1Text" style="color:var(--gray);">Present</span></span>
-          <span style="display:flex;align-items:center;gap:4px;"><span id="homeTileLeg2Dot" style="width:10px;height:10px;border-radius:2px;background:#f97316;display:inline-block;flex-shrink:0;"></span><span id="homeTileLeg2Text" style="color:var(--gray);">Absent</span></span>
-          <span id="homeTileAvgLeg" style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:2px;background:#fff;display:inline-block;flex-shrink:0;"></span><span style="color:var(--gray);">Avg</span></span>
         </div>
         <div style="overflow-x:auto;overflow-y:hidden;">
           <canvas id="homeTileCanvas" style="display:block;"></canvas>
@@ -4717,22 +4719,19 @@ function renderHomeTileChart() {
   const leg1Text = document.getElementById('homeTileLeg1Text');
   const leg2Dot  = document.getElementById('homeTileLeg2Dot');
   const leg2Text = document.getElementById('homeTileLeg2Text');
-  const avgLeg   = document.getElementById('homeTileAvgLeg');
 
   if (homeTileMode === 'present') {
     if (titleEl) titleEl.textContent = '📊 Attendance';
     if (leg1Dot)  leg1Dot.style.background  = '#22c55e';
     if (leg1Text) leg1Text.textContent       = 'Present';
-    if (leg2Dot)  leg2Dot.style.background  = '#f97316';
+    if (leg2Dot)  leg2Dot.style.background  = '#f87171';
     if (leg2Text) leg2Text.textContent       = 'Absent';
-    if (avgLeg)   avgLeg.style.display       = 'flex';
   } else {
     if (titleEl) titleEl.textContent = '📊 Strength';
     if (leg1Dot)  leg1Dot.style.background  = '#2563eb';
     if (leg1Text) leg1Text.textContent       = 'Joined';
     if (leg2Dot)  leg2Dot.style.background  = '#ef4444';
     if (leg2Text) leg2Text.textContent       = 'Blocked';
-    if (avgLeg)   avgLeg.style.display       = 'none';
   }
 
   const mSel = document.getElementById('dashMonth');
@@ -4752,7 +4751,8 @@ function _drawHomeTileBars(canvas, data, mode) {
   const dpr = window.devicePixelRatio || 1;
   const containerW = canvas.parentElement.offsetWidth || 300;
   const H = 160;
-  const W = Math.max(containerW, data.length * 32);
+  // Each month group needs space for 2 side-by-side bars
+  const W = Math.max(containerW, data.length * 44);
 
   canvas.width  = W * dpr;
   canvas.height = H * dpr;
@@ -4767,83 +4767,64 @@ function _drawHomeTileBars(canvas, data, mode) {
   const padL = 28, padR = 8, padT = 12, padB = 30;
   const chartW = W - padL - padR;
   const chartH = H - padT - padB;
-  const nBars  = data.length;
-  const barGroupW = chartW / nBars;
-  const barGap = 5;
-  const barW   = barGroupW - barGap * 2;
-  const maxVal = Math.max(...data.map(d => d.onTime + d.notOnTime), 1);
-  const rx = 4;
+  const nGroups  = data.length;
+  const groupW = chartW / nGroups;
+  const outerGap = 4;  // gap between groups
+  const innerGap = 2;  // gap between the two bars within a group
+  const totalBarW = groupW - outerGap * 2;
+  const barW = (totalBarW - innerGap) / 2;
+  const maxVal = Math.max(...data.map(d => Math.max(d.onTime, d.notOnTime)), 1);
+  const rx = 3;
 
-  const col1 = mode === 'present' ? '#22c55e' : '#2563eb';
-  const col2 = mode === 'present' ? '#f97316' : '#ef4444';
+  const col1 = mode === 'present' ? '#22c55e' : '#2563eb'; // bar 1: present / joined
+  const col2 = mode === 'present' ? '#f87171' : '#ef4444'; // bar 2: absent / blocked
 
   // Grid lines
   ctx.strokeStyle = 'rgba(30,58,95,0.6)'; ctx.lineWidth = 0.7;
   for (let i = 0; i <= 4; i++) {
     const gY = padT + (chartH / 4) * i;
     ctx.beginPath(); ctx.moveTo(padL, gY); ctx.lineTo(padL + chartW, gY); ctx.stroke();
-    ctx.fillStyle = 'rgba(148,163,184,0.7)'; ctx.font = `${fs}px sans-serif`; ctx.textAlign = 'right';
+    ctx.fillStyle = 'rgba(148,163,184,0.65)'; ctx.font = `${fs}px sans-serif`; ctx.textAlign = 'right';
     ctx.fillText(Math.round(maxVal - (maxVal / 4) * i), padL - 3, gY + 3);
   }
 
-  const avgVals = [];
+  const drawBar = (x, w, h, col, label) => {
+    if (h <= 0) return;
+    const by = padT + chartH - h;
+    ctx.fillStyle = col;
+    ctx.beginPath();
+    ctx.moveTo(x + rx, by);
+    ctx.lineTo(x + w - rx, by);
+    ctx.quadraticCurveTo(x + w, by, x + w, by + rx);
+    ctx.lineTo(x + w, by + h);
+    ctx.lineTo(x, by + h);
+    ctx.lineTo(x, by + rx);
+    ctx.quadraticCurveTo(x, by, x + rx, by);
+    ctx.fill();
+    if (h > fs + 3 && label > 0) {
+      ctx.fillStyle = '#fff';
+      ctx.font = `bold ${fs}px sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.fillText(label, x + w / 2, by + h / 2 + fs / 2 - 1);
+    }
+  };
 
   data.forEach((d, i) => {
-    const bx    = padL + i * barGroupW + barGap;
-    const total = d.onTime + d.notOnTime;
-    const h1    = d.onTime    / maxVal * chartH;
-    const h2    = d.notOnTime / maxVal * chartH;
-    const totalH = total / maxVal * chartH;
+    const groupX = padL + i * groupW + outerGap;
+    const x1 = groupX;
+    const x2 = groupX + barW + innerGap;
+    const h1 = d.onTime    / maxVal * chartH;
+    const h2 = d.notOnTime / maxVal * chartH;
 
-    // Bottom segment (present / joined)
-    if (h1 > 0) {
-      const by1 = padT + chartH - h1;
-      ctx.fillStyle = col1; ctx.beginPath();
-      if (h2 <= 0) {
-        ctx.moveTo(bx + rx, by1); ctx.lineTo(bx + barW - rx, by1);
-        ctx.quadraticCurveTo(bx + barW, by1, bx + barW, by1 + rx);
-        ctx.lineTo(bx + barW, by1 + h1); ctx.lineTo(bx, by1 + h1);
-        ctx.lineTo(bx, by1 + rx); ctx.quadraticCurveTo(bx, by1, bx + rx, by1);
-      } else {
-        ctx.rect(bx, by1, barW, h1);
-      }
-      ctx.fill();
-      if (h1 > fs + 3 && d.onTime > 0) {
-        ctx.fillStyle = '#fff'; ctx.font = `bold ${fs}px sans-serif`; ctx.textAlign = 'center';
-        ctx.fillText(d.onTime, bx + barW / 2, by1 + h1 / 2 + fs / 2 - 1);
-      }
-    }
+    drawBar(x1, barW, h1, col1, d.onTime);
+    drawBar(x2, barW, h2, col2, d.notOnTime);
 
-    // Top segment (absent / blocked)
-    if (h2 > 0) {
-      const by2 = padT + chartH - totalH;
-      ctx.fillStyle = col2; ctx.beginPath();
-      ctx.moveTo(bx + rx, by2); ctx.lineTo(bx + barW - rx, by2);
-      ctx.quadraticCurveTo(bx + barW, by2, bx + barW, by2 + rx);
-      ctx.lineTo(bx + barW, by2 + h2); ctx.lineTo(bx, by2 + h2);
-      ctx.lineTo(bx, by2 + rx); ctx.quadraticCurveTo(bx, by2, bx + rx, by2);
-      ctx.fill();
-      if (h2 > fs + 3 && d.notOnTime > 0) {
-        ctx.fillStyle = '#fff'; ctx.font = `bold ${fs}px sans-serif`; ctx.textAlign = 'center';
-        ctx.fillText(d.notOnTime, bx + barW / 2, by2 + h2 / 2 + fs / 2 - 1);
-      }
-    }
-
-    if (total > 0) avgVals.push({ x: bx + barW / 2, y: padT + chartH - totalH });
-
-    // X-axis label
-    ctx.fillStyle = 'rgba(148,163,184,0.85)'; ctx.font = `${fs}px sans-serif`; ctx.textAlign = 'center';
-    ctx.fillText(d.label, padL + i * barGroupW + barGroupW / 2, H - padB + fs + 5);
+    // X-axis label centred under the group
+    ctx.fillStyle = 'rgba(148,163,184,0.85)';
+    ctx.font = `${fs}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.fillText(d.label, padL + i * groupW + groupW / 2, H - padB + fs + 5);
   });
-
-  // Avg line (attendance mode only)
-  if (mode === 'present' && avgVals.length > 1) {
-    ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.setLineDash([4, 4]);
-    ctx.beginPath(); avgVals.forEach((pt, i) => { i === 0 ? ctx.moveTo(pt.x, pt.y) : ctx.lineTo(pt.x, pt.y); }); ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.fillStyle = '#fff';
-    avgVals.forEach(pt => { ctx.beginPath(); ctx.arc(pt.x, pt.y, 2.5, 0, Math.PI * 2); ctx.fill(); });
-  }
 }
 // ─────────────────────────────────────────────────────────────────
 
