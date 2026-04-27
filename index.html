@@ -450,16 +450,49 @@ body { font-family: 'Segoe UI', 'Noto Sans', Roboto, 'Arial Unicode MS', Arial, 
       <div id="pendingList" style="display:none;"></div>
       <div id="prevMonthLabel" style="display:none;"></div>
       <div id="prevMonthPending" style="display:none;"></div>
-      <!-- Chart canvas hidden but kept for JS compatibility -->
       <canvas id="dashBarChart" style="display:none;"></canvas>
       <select id="chartRangeMonths" style="display:none;"><option value="6" selected>6</option></select>
       <select id="chartRangeYears" style="display:none;"><option value="1" selected>1</option></select>
       <div id="dashChartTitle" style="display:none;"></div>
-      <div id="dashChartLegend1" style="display:none;"></div>
-      <div id="dashChartLegend2" style="display:none;"></div>
+      <div id="dashChartLegend1" style="display:none;"><span></span></div>
+      <div id="dashChartLegend2" style="display:none;"><span></span></div>
       <div id="dashChartLegendAvg" style="display:none;"></div>
       <button id="chartBtnPresent" style="display:none;"></button>
       <button id="chartBtnJoined" style="display:none;"></button>
+
+      <!-- INLINE BAR CHART TILE -->
+      <div class="card" style="margin-bottom:10px;padding:10px 10px 8px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:6px;">
+          <div style="font-size:13px;font-weight:700;color:var(--gold);" id="homeTileChartTitle">📊 Attendance</div>
+          <div style="display:flex;gap:3px;background:var(--royal);border-radius:8px;padding:3px;flex-shrink:0;">
+            <button id="homeTileBtnAtt" onclick="setHomeTileMode('present')"
+              style="padding:4px 10px;border-radius:6px;border:none;font-size:10px;font-weight:700;cursor:pointer;background:var(--accent2);color:#fff;transition:all .15s;">Attendance</button>
+            <button id="homeTileBtnStr" onclick="setHomeTileMode('joined')"
+              style="padding:4px 10px;border-radius:6px;border:none;font-size:10px;font-weight:700;cursor:pointer;background:transparent;color:var(--gray);transition:all .15s;">Strength</button>
+          </div>
+          <div style="display:flex;align-items:center;gap:4px;flex-shrink:0;">
+            <span style="font-size:10px;color:var(--gray);">Last</span>
+            <select id="homeTileMonths" onchange="renderHomeTileChart()"
+              style="background:var(--card2);border:1px solid var(--border);border-radius:6px;color:var(--gold);font-size:11px;font-weight:700;padding:4px 5px;outline:none;cursor:pointer;">
+              <option value="3">3 mo</option>
+              <option value="6" selected>6 mo</option>
+              <option value="9">9 mo</option>
+              <option value="12">12 mo</option>
+            </select>
+          </div>
+        </div>
+        <div style="display:flex;gap:12px;margin-bottom:6px;font-size:10px;flex-wrap:wrap;">
+          <span style="display:flex;align-items:center;gap:4px;"><span id="homeTileLeg1Dot" style="width:10px;height:10px;border-radius:2px;background:#22c55e;display:inline-block;flex-shrink:0;"></span><span id="homeTileLeg1Text" style="color:var(--gray);">Present</span></span>
+          <span style="display:flex;align-items:center;gap:4px;"><span id="homeTileLeg2Dot" style="width:10px;height:10px;border-radius:2px;background:#f97316;display:inline-block;flex-shrink:0;"></span><span id="homeTileLeg2Text" style="color:var(--gray);">Absent</span></span>
+          <span id="homeTileAvgLeg" style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:2px;background:#fff;display:inline-block;flex-shrink:0;"></span><span style="color:var(--gray);">Avg</span></span>
+        </div>
+        <div style="overflow-x:auto;overflow-y:hidden;">
+          <canvas id="homeTileCanvas" style="display:block;"></canvas>
+        </div>
+        <div style="text-align:right;margin-top:6px;">
+          <button onclick="openChartMax()" style="background:none;border:none;color:var(--accent2);font-size:11px;font-weight:700;cursor:pointer;padding:0;">⛶ Expand</button>
+        </div>
+      </div>
     </div>
 
     <!-- ===== CHART MAXIMIZE PAGE ===== -->
@@ -4509,8 +4542,9 @@ function loadDashboard() {
   } else {
     prevEl.innerHTML = `<div style="color:var(--gray);font-size:12px;padding:6px 0;">No pending from ${MONTHS[pm-1]} ${py}.</div>`;
   }
-  // Render chart
+  // Render charts
   renderDashChart();
+  renderHomeTileChart();
 }
 
 // ----------------------------------------------------------------
@@ -4653,6 +4687,165 @@ function renderDashChart() {
 
   _drawStackedBars(canvas, data, dashChartMode, false);
 }
+
+// ── HOME TILE CHART ──────────────────────────────────────────────
+let homeTileMode = 'present'; // 'present' | 'joined'
+
+function setHomeTileMode(mode) {
+  homeTileMode = mode;
+  const bAtt = document.getElementById('homeTileBtnAtt');
+  const bStr = document.getElementById('homeTileBtnStr');
+  if (bAtt && bStr) {
+    if (mode === 'present') {
+      bAtt.style.background = 'var(--accent2)'; bAtt.style.color = '#fff';
+      bStr.style.background = 'transparent';    bStr.style.color = 'var(--gray)';
+    } else {
+      bStr.style.background = 'var(--accent2)'; bStr.style.color = '#fff';
+      bAtt.style.background = 'transparent';    bAtt.style.color = 'var(--gray)';
+    }
+  }
+  renderHomeTileChart();
+}
+
+function renderHomeTileChart() {
+  const canvas = document.getElementById('homeTileCanvas');
+  if (!canvas) return;
+
+  // Update title and legends
+  const titleEl = document.getElementById('homeTileChartTitle');
+  const leg1Dot  = document.getElementById('homeTileLeg1Dot');
+  const leg1Text = document.getElementById('homeTileLeg1Text');
+  const leg2Dot  = document.getElementById('homeTileLeg2Dot');
+  const leg2Text = document.getElementById('homeTileLeg2Text');
+  const avgLeg   = document.getElementById('homeTileAvgLeg');
+
+  if (homeTileMode === 'present') {
+    if (titleEl) titleEl.textContent = '📊 Attendance';
+    if (leg1Dot)  leg1Dot.style.background  = '#22c55e';
+    if (leg1Text) leg1Text.textContent       = 'Present';
+    if (leg2Dot)  leg2Dot.style.background  = '#f97316';
+    if (leg2Text) leg2Text.textContent       = 'Absent';
+    if (avgLeg)   avgLeg.style.display       = 'flex';
+  } else {
+    if (titleEl) titleEl.textContent = '📊 Strength';
+    if (leg1Dot)  leg1Dot.style.background  = '#2563eb';
+    if (leg1Text) leg1Text.textContent       = 'Joined';
+    if (leg2Dot)  leg2Dot.style.background  = '#ef4444';
+    if (leg2Text) leg2Text.textContent       = 'Blocked';
+    if (avgLeg)   avgLeg.style.display       = 'none';
+  }
+
+  const mSel = document.getElementById('dashMonth');
+  const ySel = document.getElementById('dashYear');
+  const selM = mSel ? parseInt(mSel.value) : new Date().getMonth() + 1;
+  const selY = ySel ? parseInt(ySel.value) : new Date().getFullYear();
+  const numMonths = parseInt(document.getElementById('homeTileMonths')?.value || 6);
+
+  const months = _buildMonthRange(selM, selY, numMonths, 1);
+  const data   = _buildChartData(months, homeTileMode);
+
+  // Draw using stacked bars (same as existing function, compact height)
+  _drawHomeTileBars(canvas, data, homeTileMode);
+}
+
+function _drawHomeTileBars(canvas, data, mode) {
+  const dpr = window.devicePixelRatio || 1;
+  const containerW = canvas.parentElement.offsetWidth || 300;
+  const H = 160;
+  const W = Math.max(containerW, data.length * 32);
+
+  canvas.width  = W * dpr;
+  canvas.height = H * dpr;
+  canvas.style.width  = W + 'px';
+  canvas.style.height = H + 'px';
+
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0, 0, W, H);
+
+  const fs = 9;
+  const padL = 28, padR = 8, padT = 12, padB = 30;
+  const chartW = W - padL - padR;
+  const chartH = H - padT - padB;
+  const nBars  = data.length;
+  const barGroupW = chartW / nBars;
+  const barGap = 5;
+  const barW   = barGroupW - barGap * 2;
+  const maxVal = Math.max(...data.map(d => d.onTime + d.notOnTime), 1);
+  const rx = 4;
+
+  const col1 = mode === 'present' ? '#22c55e' : '#2563eb';
+  const col2 = mode === 'present' ? '#f97316' : '#ef4444';
+
+  // Grid lines
+  ctx.strokeStyle = 'rgba(30,58,95,0.6)'; ctx.lineWidth = 0.7;
+  for (let i = 0; i <= 4; i++) {
+    const gY = padT + (chartH / 4) * i;
+    ctx.beginPath(); ctx.moveTo(padL, gY); ctx.lineTo(padL + chartW, gY); ctx.stroke();
+    ctx.fillStyle = 'rgba(148,163,184,0.7)'; ctx.font = `${fs}px sans-serif`; ctx.textAlign = 'right';
+    ctx.fillText(Math.round(maxVal - (maxVal / 4) * i), padL - 3, gY + 3);
+  }
+
+  const avgVals = [];
+
+  data.forEach((d, i) => {
+    const bx    = padL + i * barGroupW + barGap;
+    const total = d.onTime + d.notOnTime;
+    const h1    = d.onTime    / maxVal * chartH;
+    const h2    = d.notOnTime / maxVal * chartH;
+    const totalH = total / maxVal * chartH;
+
+    // Bottom segment (present / joined)
+    if (h1 > 0) {
+      const by1 = padT + chartH - h1;
+      ctx.fillStyle = col1; ctx.beginPath();
+      if (h2 <= 0) {
+        ctx.moveTo(bx + rx, by1); ctx.lineTo(bx + barW - rx, by1);
+        ctx.quadraticCurveTo(bx + barW, by1, bx + barW, by1 + rx);
+        ctx.lineTo(bx + barW, by1 + h1); ctx.lineTo(bx, by1 + h1);
+        ctx.lineTo(bx, by1 + rx); ctx.quadraticCurveTo(bx, by1, bx + rx, by1);
+      } else {
+        ctx.rect(bx, by1, barW, h1);
+      }
+      ctx.fill();
+      if (h1 > fs + 3 && d.onTime > 0) {
+        ctx.fillStyle = '#fff'; ctx.font = `bold ${fs}px sans-serif`; ctx.textAlign = 'center';
+        ctx.fillText(d.onTime, bx + barW / 2, by1 + h1 / 2 + fs / 2 - 1);
+      }
+    }
+
+    // Top segment (absent / blocked)
+    if (h2 > 0) {
+      const by2 = padT + chartH - totalH;
+      ctx.fillStyle = col2; ctx.beginPath();
+      ctx.moveTo(bx + rx, by2); ctx.lineTo(bx + barW - rx, by2);
+      ctx.quadraticCurveTo(bx + barW, by2, bx + barW, by2 + rx);
+      ctx.lineTo(bx + barW, by2 + h2); ctx.lineTo(bx, by2 + h2);
+      ctx.lineTo(bx, by2 + rx); ctx.quadraticCurveTo(bx, by2, bx + rx, by2);
+      ctx.fill();
+      if (h2 > fs + 3 && d.notOnTime > 0) {
+        ctx.fillStyle = '#fff'; ctx.font = `bold ${fs}px sans-serif`; ctx.textAlign = 'center';
+        ctx.fillText(d.notOnTime, bx + barW / 2, by2 + h2 / 2 + fs / 2 - 1);
+      }
+    }
+
+    if (total > 0) avgVals.push({ x: bx + barW / 2, y: padT + chartH - totalH });
+
+    // X-axis label
+    ctx.fillStyle = 'rgba(148,163,184,0.85)'; ctx.font = `${fs}px sans-serif`; ctx.textAlign = 'center';
+    ctx.fillText(d.label, padL + i * barGroupW + barGroupW / 2, H - padB + fs + 5);
+  });
+
+  // Avg line (attendance mode only)
+  if (mode === 'present' && avgVals.length > 1) {
+    ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.setLineDash([4, 4]);
+    ctx.beginPath(); avgVals.forEach((pt, i) => { i === 0 ? ctx.moveTo(pt.x, pt.y) : ctx.lineTo(pt.x, pt.y); }); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#fff';
+    avgVals.forEach(pt => { ctx.beginPath(); ctx.arc(pt.x, pt.y, 2.5, 0, Math.PI * 2); ctx.fill(); });
+  }
+}
+// ─────────────────────────────────────────────────────────────────
 
 function renderChartMax() {
   const canvas = document.getElementById('chartMaxCanvas');
@@ -5607,14 +5800,21 @@ function downloadAttendance(fmt) {
   const d = document.getElementById('attDate').value;
   const viewType = document.getElementById('attViewType').value;
   const batch = selectedBatch.att;
+  const searchQ = (document.getElementById('attSearch')?.value || '').trim().toLowerCase();
+  const statusFilter = document.getElementById('attStatusFilter')?.value || 'all';
+
   let students = getActiveStudents();
   if (batch !== 'ALL') students = students.filter(s => s.batch===batch);
+  if (searchQ) students = students.filter(s => (s.name||'').toLowerCase().includes(searchQ));
 
   if (viewType === 'day') {
     const dk = `${y}-${pad(m)}-${pad(d)}`;
     const dayData = DB.attendance[dk] || {};
     const classDay = isClassDay(dk);
-    const enrolled = students.filter(s => isEnrolledOnDate(s, parseInt(y), parseInt(m), parseInt(d)));
+    let enrolled = students.filter(s => isEnrolledOnDate(s, parseInt(y), parseInt(m), parseInt(d)));
+    // Apply status filter
+    if (statusFilter === 'present') enrolled = enrolled.filter(s => dayData[s.id]==='P');
+    else if (statusFilter === 'absent') enrolled = enrolled.filter(s => dayData[s.id]==='A' || (!dayData[s.id] && classDay));
     const headers = ['Name','Batch','Status'];
     const rows = enrolled.map(s => {
       const v = dayData[s.id];
@@ -5631,7 +5831,10 @@ function downloadAttendance(fmt) {
   } else {
     const prefix = `${y}-${pad(m)}-`;
     const classDays = Object.keys(DB.attendance).filter(k=>k.startsWith(prefix)&&isClassDay(k)).sort();
-    const enrolled = students.filter(s => isEnrolledOnDate(s, parseInt(y), parseInt(m), 0));
+    let enrolled = students.filter(s => isEnrolledOnDate(s, parseInt(y), parseInt(m), 0));
+    // Apply status filter for month view
+    if (statusFilter === 'present') enrolled = enrolled.filter(s => studentAttendedMonth(s.id, parseInt(y), parseInt(m)));
+    else if (statusFilter === 'absent') enrolled = enrolled.filter(s => !studentAttendedMonth(s.id, parseInt(y), parseInt(m)));
     const headers = ['Name','Batch','Present Days','Absent Days','Leave Days','Present Dates'];
     const rows = enrolled.map(s => {
       let p=0,a=0,l=0,dates=[];
@@ -5646,6 +5849,8 @@ function downloadAttendance(fmt) {
 
 function downloadFees(fmt) {
   const batch = selectedBatch.fee;
+  const statusFilter = document.getElementById('feeStatusFilter')?.value || 'all';
+  const searchQ = (document.getElementById('feeSearch')?.value || '').trim().toLowerCase();
   const headers = ['Name','Batch','Contact','Joined','Month','Attendance','Fee Status','Amount (₹)','Method','Payment Date'];
   let rows = [];
   let titleStr = '';
@@ -5663,17 +5868,26 @@ function downloadFees(fmt) {
 
   let students = getActiveStudents();
   if (batch !== 'ALL') students = students.filter(s => s.batch === batch);
+  if (searchQ) students = students.filter(s =>
+    (s.name||'').toLowerCase().includes(searchQ) ||
+    (s.contact||'').toLowerCase().includes(searchQ) ||
+    (s.batch||'').toLowerCase().includes(searchQ)
+  );
 
   feeMonthKeys.forEach(fk => {
     const [fy, fm] = fk.split('-').map(Number);
     const feeData = DB.fees[fk] || {};
     const monthStudents = students.filter(s => isEnrolledOnDate(s, fy, fm, 0));
-    monthStudents.forEach(s => {
-      const attended = studentAttendedMonth(s.id, fy, fm) ? 'Yes' : 'No';
+    // Only include students who attended (same logic as renderFees)
+    const eligible = monthStudents.filter(s => studentAttendedMonth(s.id, fy, fm));
+    eligible.forEach(s => {
       const e = feeData[s.id] || {};
       const p = isPaid(e);
+      // Apply status filter
+      if (statusFilter === 'paid' && !p) return;
+      if (statusFilter === 'unpaid' && p) return;
       rows.push([s.name, s.batch||'', s.contact||'', s.joinDate||'',
-        MONTHS[fm-1]+' '+fy, attended, p?'Paid':'Not Paid',
+        MONTHS[fm-1]+' '+fy, 'Yes', p?'Paid':'Not Paid',
         e.amount||'', e.method||'',
         e.date ? new Date(e.date).toLocaleDateString() : '']);
     });
@@ -5964,7 +6178,7 @@ document.addEventListener('click', e => {
 
 // Redraw chart on resize
 window.addEventListener('resize', () => {
-  if (currentPage === 'home') renderDashChart();
+  if (currentPage === 'home') { renderDashChart(); renderHomeTileChart(); }
   const pg = document.getElementById('pageChartMax');
   if (pg && pg.classList.contains('active')) renderChartMax();
 });
