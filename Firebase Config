@@ -1,6 +1,7 @@
 const firebaseConfig = {
   apiKey: "AIzaSyCz3JNH9m_-rjMzA8aMsrhMnYDLJiR4NBw",
   authDomain: "meelkazhani-silambam-academy-t.firebaseapp.com",
+  databaseURL: "https://meelkazhani-silambam-academy-t-default-rtdb.asia-southeast1.firebasedatabase.app",
   projectId: "meelkazhani-silambam-academy-t",
   storageBucket: "meelkazhani-silambam-academy-t.firebasestorage.app",
   messagingSenderId: "900036312619",
