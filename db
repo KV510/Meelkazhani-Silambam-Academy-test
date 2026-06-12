@@ -1,0 +1,25 @@
+{
+  "sacdb": {
+    "users": [
+      {
+        "id": "admin",
+        "email": "admin@silambam.app",
+        "name": "Admin",
+        "role": "admin"
+      }
+    ],
+    "batches": ["Batch 1"],
+    "students": [],
+    "attendance": {},
+    "fees": {},
+    "enquiries": [],
+    "changelog": [],
+    "msgLogs": [],
+    "classLog": [],
+    "snapshotIndex": [],
+    "settings": {
+      "academyName": "MEELKAZHANI SILAMBAM ACADEMY",
+      "tagline": "Admin & Staff Portal"
+    }
+  }
+}
