@@ -766,10 +766,7 @@ body { font-family: 'Segoe UI', 'Noto Sans', Roboto, 'Arial Unicode MS', Arial, 
     <div class="page" id="pageEnquiry">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
         <div class="section-title" style="margin-bottom:0;">💬 Queries</div>
-        <div style="display:flex;gap:6px;">
-          <button class="btn btn-outline btn-sm" onclick="openClassLogModal()">📋 Activity</button>
-          <button class="btn btn-primary btn-sm" onclick="openAddEnquiryModal()">+ Add</button>
-        </div>
+        <button class="btn btn-primary btn-sm" onclick="openAddEnquiryModal()">+ Add</button>
       </div>
       <!-- Filters — collapsible -->
       <div style="margin-bottom:8px;">
@@ -805,6 +802,27 @@ body { font-family: 'Segoe UI', 'Noto Sans', Roboto, 'Arial Unicode MS', Arial, 
         <input type="text" class="search-input" placeholder="Search by name or phone…" id="enquirySearch" oninput="renderEnquiryList()">
       </div>
       <div id="enquiryListWrap"></div>
+    </div>
+
+    <!-- ===== ACTIVITY LOG ===== -->
+    <div class="page" id="pageActivity">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <div class="section-title" style="margin-bottom:0;">📋 Activity Log</div>
+        <button class="btn btn-primary btn-sm" onclick="openClassLogAddModal()">+ Add</button>
+      </div>
+
+      <!-- Filter row -->
+      <div style="display:flex;gap:6px;margin-bottom:10px;">
+        <select id="classLogFilterBatch" onchange="renderClassLog()" class="form-select" style="flex:1;padding:7px 10px;font-size:12px;">
+          <option value="">All Batches</option>
+        </select>
+        <input type="month" id="classLogFilterMonth" onchange="renderClassLog()" class="form-input" style="flex:1;padding:7px 10px;font-size:12px;">
+      </div>
+
+      <!-- Log List -->
+      <div id="classLogList" style="padding-bottom:72px;">
+        <div class="empty-state" style="padding:20px;">No class entries yet.</div>
+      </div>
     </div>
 
     <!-- ===== PROFILE ===== -->
@@ -1006,6 +1024,10 @@ body { font-family: 'Segoe UI', 'Noto Sans', Roboto, 'Arial Unicode MS', Arial, 
     <button class="nav-item" id="nav-enquiry" onclick="switchPage('enquiry')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
       <span>Queries</span>
+    </button>
+    <button class="nav-item" id="nav-activity" onclick="switchPage('activity')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+      <span>Activity</span>
     </button>
     <button class="nav-item" id="nav-profile" onclick="switchPage('profile')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
@@ -1351,46 +1373,38 @@ body { font-family: 'Segoe UI', 'Noto Sans', Roboto, 'Arial Unicode MS', Arial, 
   </div>
 </div>
 
-<!-- CLASS ACTIVITY LOG MODAL -->
-<div class="modal-overlay" id="modalClassLog">
-  <div class="modal" style="max-height:95vh;">
+<!-- LOG A CLASS MODAL -->
+<div class="modal-overlay" id="modalClassLogAdd">
+  <div class="modal">
     <div class="modal-title">
-      <span>📋 Class Activity Log</span>
-      <button class="modal-close" onclick="closeModal('modalClassLog')">×</button>
+      <span>➕ Log a Class</span>
+      <button class="modal-close" onclick="closeModal('modalClassLogAdd')">×</button>
     </div>
-
-    <!-- Add Entry Form -->
-    <div id="classLogAddForm" style="background:var(--card2);border-radius:10px;padding:12px;margin-bottom:14px;">
-      <div style="font-size:12px;font-weight:700;color:var(--gold);margin-bottom:10px;">➕ Log a Class</div>
-      <div class="form-row" style="margin-bottom:8px;">
-        <div class="form-group" style="margin-bottom:0;">
-          <label class="form-label">Date</label>
-          <input type="date" class="form-input" id="classLogDate">
-        </div>
-        <div class="form-group" style="margin-bottom:0;">
-          <label class="form-label">Batch</label>
-          <select class="form-select" id="classLogBatch"></select>
-        </div>
+    <div class="form-row" style="margin-bottom:8px;">
+      <div class="form-group" style="margin-bottom:0;">
+        <label class="form-label">Date</label>
+        <input type="date" class="form-input" id="classLogDate">
       </div>
-      <div class="form-group" style="margin-bottom:10px;">
-        <label class="form-label">What was covered? (optional)</label>
-        <textarea class="form-input" id="classLogNote" rows="2" placeholder="e.g. Warm-up, Silambam basics, Footwork drills…" style="resize:none;"></textarea>
+      <div class="form-group" style="margin-bottom:0;">
+        <label class="form-label">Batch</label>
+        <select class="form-select" id="classLogBatch"></select>
       </div>
-      <button class="btn btn-primary btn-sm" style="width:100%;" onclick="saveClassLog()">💾 Save Entry</button>
     </div>
-
-    <!-- Filter row -->
-    <div style="display:flex;gap:6px;margin-bottom:10px;align-items:center;">
-      <select id="classLogFilterBatch" onchange="renderClassLog()" class="form-select" style="flex:1;padding:7px 10px;font-size:12px;">
-        <option value="">All Batches</option>
-      </select>
-      <input type="month" id="classLogFilterMonth" onchange="renderClassLog()" class="form-input" style="flex:1;padding:7px 10px;font-size:12px;">
+    <div class="form-row" style="margin-bottom:8px;">
+      <div class="form-group" style="margin-bottom:0;">
+        <label class="form-label">🟢 In Time</label>
+        <input type="time" class="form-input" id="classLogInTime">
+      </div>
+      <div class="form-group" style="margin-bottom:0;">
+        <label class="form-label">🔴 Out Time</label>
+        <input type="time" class="form-input" id="classLogOutTime">
+      </div>
     </div>
-
-    <!-- Log List -->
-    <div id="classLogList" style="max-height:340px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;">
-      <div class="empty-state" style="padding:20px;">No class entries yet.</div>
+    <div class="form-group" style="margin-bottom:12px;">
+      <label class="form-label">What was covered? (optional)</label>
+      <textarea class="form-input" id="classLogNote" rows="3" placeholder="e.g. Warm-up, Silambam basics, Footwork drills…" style="resize:none;"></textarea>
     </div>
+    <button class="btn btn-primary" style="width:100%;padding:12px;" onclick="saveClassLog()">💾 Save Entry</button>
   </div>
 </div>
 
@@ -2860,7 +2874,7 @@ function notifyFirebaseUpdate(remote, isPush) {
   }
 }
 
-const PAGE_ORDER_NAV = ['home','students','attendance','fees','enquiry','profile'];
+const PAGE_ORDER_NAV = ['home','students','attendance','fees','enquiry','activity','profile'];
 function switchPage(name) {
   const prevPage = currentPage;
   currentPage = name;
@@ -2925,6 +2939,7 @@ function switchPage(name) {
   if (name === 'attendance') { renderBatchChips('att'); renderAttendance(); }
   if (name === 'fees') { renderBatchChips('fee'); renderFees(); }
   if (name === 'enquiry') renderEnquiryList();
+  if (name === 'activity') renderActivityPage();
   if (name === 'profile') renderProfilePage();
 }
 function refreshCurrentPage() {
@@ -6661,52 +6676,54 @@ setInterval(() => {
 // ================================================================
 // CLASS ACTIVITY LOG
 // ================================================================
-function openClassLogModal() {
-  // Set today's date as default
-  document.getElementById('classLogDate').value = todayStr();
-  document.getElementById('classLogNote').value = '';
-
-  // Populate batch dropdowns
+function openClassLogAddModal() {
+  const staffBatches = getStaffBatches();
+  const allowedBatches = staffBatches.length > 0 ? staffBatches : DB.batches;
   const bSel = document.getElementById('classLogBatch');
-  bSel.innerHTML = DB.batches.map(b => `<option value="${escHtml(b)}">${escHtml(b)}</option>`).join('');
-
-  const fSel = document.getElementById('classLogFilterBatch');
-  fSel.innerHTML = '<option value="">All Batches</option>' +
-    DB.batches.map(b => `<option value="${escHtml(b)}">${escHtml(b)}</option>`).join('');
-
-  // Set filter month to current month
-  const now = new Date();
-  document.getElementById('classLogFilterMonth').value =
-    now.getFullYear() + '-' + pad(now.getMonth() + 1);
-
-  renderClassLog();
-  openModal('modalClassLog');
+  if (bSel) bSel.innerHTML = allowedBatches.map(b => `<option value="${escHtml(b)}">${escHtml(b)}</option>`).join('');
+  document.getElementById('classLogDate').value = todayStr();
+  document.getElementById('classLogInTime').value = '';
+  document.getElementById('classLogOutTime').value = '';
+  document.getElementById('classLogNote').value = '';
+  openModal('modalClassLogAdd');
 }
 
 function saveClassLog() {
-  const date  = document.getElementById('classLogDate').value;
-  const batch = document.getElementById('classLogBatch').value;
-  const note  = (document.getElementById('classLogNote').value || '').trim();
+  const date    = document.getElementById('classLogDate').value;
+  const batch   = document.getElementById('classLogBatch').value;
+  const inTime  = document.getElementById('classLogInTime').value;
+  const outTime = document.getElementById('classLogOutTime').value;
+  const note    = (document.getElementById('classLogNote').value || '').trim();
 
   if (!date)  { showToast('Please select a date', 'error'); return; }
   if (!batch) { showToast('Please select a batch', 'error'); return; }
+
+  // Calculate duration if both times provided
+  let duration = '';
+  if (inTime && outTime) {
+    const [ih, im] = inTime.split(':').map(Number);
+    const [oh, om] = outTime.split(':').map(Number);
+    const mins = (oh * 60 + om) - (ih * 60 + im);
+    if (mins > 0) {
+      const h = Math.floor(mins / 60);
+      const m = mins % 60;
+      duration = h > 0 ? `${h}h ${m}m` : `${m}m`;
+    }
+  }
 
   if (!Array.isArray(DB.classLog)) DB.classLog = [];
 
   const by = currentUser ? (currentUser.name || currentUser.id) : 'Unknown';
   DB.classLog.unshift({
-    id:    'cl_' + Date.now(),
-    date,
-    batch,
-    note,
-    by,
-    at:    new Date().toISOString()
+    id: 'cl_' + Date.now(),
+    date, batch, inTime, outTime, duration, note, by,
+    at: new Date().toISOString()
   });
 
   scheduleFirebasePush();
   addLog('classlog', `Class logged: ${batch} on ${date} by ${by}`);
   showToast('Class entry saved ✓', 'success');
-  document.getElementById('classLogNote').value = '';
+  closeModal('modalClassLogAdd');
   renderClassLog();
 }
 
@@ -6735,12 +6752,28 @@ function renderClassLog() {
     const dayName = DAYS[d.getDay()];
     const dateDisp = `${dayName}, ${pad(d.getDate())} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
     const canDelete = isAdmin();
+
+    // Format time as 12-hour
+    const fmt12 = t => {
+      if (!t) return '';
+      const [h, m] = t.split(':').map(Number);
+      return `${((h % 12) || 12)}:${pad(m)} ${h >= 12 ? 'PM' : 'AM'}`;
+    };
+    const inDisp  = fmt12(e.inTime);
+    const outDisp = fmt12(e.outTime);
+
     return `<div style="padding:11px 13px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:10px;">
       <div style="flex:1;min-width:0;">
-        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:3px;">
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px;">
           <span style="font-size:13px;font-weight:700;color:var(--gold);">${escHtml(dateDisp)}</span>
           <span class="badge badge-blue" style="font-size:10px;">${escHtml(e.batch)}</span>
         </div>
+        ${(inDisp || outDisp) ? `
+        <div style="display:flex;gap:10px;align-items:center;margin-bottom:4px;flex-wrap:wrap;">
+          ${inDisp  ? `<span style="font-size:12px;font-weight:600;"><span style="color:#4ade80;">🟢 In:</span> <span style="color:var(--offwhite);">${escHtml(inDisp)}</span></span>` : ''}
+          ${outDisp ? `<span style="font-size:12px;font-weight:600;"><span style="color:#f87171;">🔴 Out:</span> <span style="color:var(--offwhite);">${escHtml(outDisp)}</span></span>` : ''}
+          ${e.duration ? `<span class="badge badge-gold" style="font-size:10px;">⏱ ${escHtml(e.duration)}</span>` : ''}
+        </div>` : ''}
         ${e.note ? `<div style="font-size:12px;color:var(--offwhite);line-height:1.5;margin-bottom:3px;">${escHtml(e.note)}</div>` : ''}
         <div style="font-size:10px;color:var(--graydk);">✍️ ${escHtml(e.by)} · ${new Date(e.at).toLocaleString('en-GB',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}</div>
       </div>
@@ -6759,9 +6792,38 @@ function deleteClassLog(id) {
   });
 }
 
-// ================================================================
-// BATCH ASSIGNMENT HELPERS
-// ================================================================
+function renderActivityPage() {
+  // Set today's date as default
+  const dateEl = document.getElementById('classLogDate');
+  if (dateEl && !dateEl.value) dateEl.value = todayStr();
+
+  const noteEl = document.getElementById('classLogNote');
+  if (noteEl) noteEl.value = '';
+
+  // Populate batch dropdowns restricted to staff's assigned batches
+  const staffBatches = getStaffBatches();
+  const allowedBatches = staffBatches.length > 0 ? staffBatches : DB.batches;
+
+  const bSel = document.getElementById('classLogBatch');
+  if (bSel) bSel.innerHTML = allowedBatches.map(b => `<option value="${escHtml(b)}">${escHtml(b)}</option>`).join('');
+
+  const fSel = document.getElementById('classLogFilterBatch');
+  if (fSel) {
+    const cur = fSel.value;
+    fSel.innerHTML = '<option value="">All Batches</option>' +
+      allowedBatches.map(b => `<option value="${escHtml(b)}"${cur===b?' selected':''}>${escHtml(b)}</option>`).join('');
+  }
+
+  // Set filter month to current month if not set
+  const mEl = document.getElementById('classLogFilterMonth');
+  if (mEl && !mEl.value) {
+    const now = new Date();
+    mEl.value = now.getFullYear() + '-' + pad(now.getMonth() + 1);
+  }
+
+  renderClassLog();
+}
+
 function populateBatchAssignCheckboxes(assigned) {
   const wrap = document.getElementById('batchAssignCheckboxes');
   if (!wrap) return;
