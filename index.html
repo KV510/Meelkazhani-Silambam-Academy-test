@@ -1408,6 +1408,47 @@ body { font-family: 'Segoe UI', 'Noto Sans', Roboto, 'Arial Unicode MS', Arial, 
   </div>
 </div>
 
+<!-- ASSIGN BATCH MODAL -->
+<div class="modal-overlay" id="modalAssignBatch">
+  <div class="modal">
+    <div class="modal-title">
+      <span>📦 Assign Batches</span>
+      <button class="modal-close" onclick="closeModal('modalAssignBatch')">×</button>
+    </div>
+    <input type="hidden" id="assignBatchUserId">
+    <div style="background:var(--card2);border-radius:8px;padding:10px 12px;margin-bottom:12px;">
+      <div style="font-size:13px;font-weight:700;color:var(--offwhite);" id="assignBatchUserName"></div>
+      <div style="font-size:11px;color:var(--gray);margin-top:2px;" id="assignBatchUserEmail"></div>
+    </div>
+    <div style="font-size:12px;color:var(--gray);margin-bottom:10px;line-height:1.6;">
+      Tick the batches this staff can access. Leave all unchecked to allow access to all batches.
+    </div>
+    <div id="assignBatchCheckboxes" style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px;"></div>
+    <button class="btn btn-primary" style="width:100%;padding:12px;" onclick="saveAssignBatch()">💾 Save Batch Assignment</button>
+  </div>
+</div>
+
+<!-- ASSIGN BATCH MODAL -->
+<div class="modal-overlay" id="modalAssignBatch">
+  <div class="modal">
+    <div class="modal-title">
+      <span>📦 Assign Batches</span>
+      <button class="modal-close" onclick="closeModal('modalAssignBatch')">×</button>
+    </div>
+    <input type="hidden" id="assignBatchUserId">
+    <!-- Staff info -->
+    <div style="background:var(--card2);border-radius:8px;padding:10px 12px;margin-bottom:14px;">
+      <div style="font-size:14px;font-weight:700;color:var(--offwhite);" id="assignBatchUserName"></div>
+      <div style="font-size:11px;color:var(--gray);margin-top:2px;" id="assignBatchUserEmail"></div>
+    </div>
+    <!-- Batch checkboxes -->
+    <div style="font-size:12px;color:var(--gray);margin-bottom:8px;">Select which batches this staff can access:</div>
+    <div id="assignBatchCheckboxes" style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px;"></div>
+    <div style="font-size:11px;color:var(--graydk);margin-bottom:14px;">Leave all unchecked = staff can access all batches.</div>
+    <button class="btn btn-primary" style="width:100%;padding:12px;" onclick="saveAssignBatch()">💾 Save Assignment</button>
+  </div>
+</div>
+
 <!-- CONFIRM DIALOG -->
 <div class="confirm-overlay" id="confirmDlg">
   <div class="confirm-box">
@@ -5961,13 +6002,20 @@ function renderUserList() {
     const batches = Array.isArray(u.assignedBatches) && u.assignedBatches.length > 0
       ? u.assignedBatches.map(b => `<span class="badge badge-blue" style="font-size:10px;">${escHtml(b)}</span>`).join(' ')
       : (u.role === 'staff' ? '<span style="font-size:10px;color:var(--graydk);">All batches</span>' : '');
-    html += `<div style="display:flex;align-items:center;justify-content:space-between;padding:9px 10px;background:var(--card2);border:1px solid var(--border);border-radius:8px;margin-bottom:6px;">
-      <div style="flex:1;min-width:0;">
-        <div style="font-size:13px;font-weight:700;color:var(--offwhite);">👤 ${escHtml(u.name||u.email||u.id)} <span class="badge ${u.role==='admin'?'badge-gold':'badge-blue'}">${u.role}</span></div>
-        <div style="font-size:11px;color:var(--gray);margin-top:2px;">📧 ${escHtml(u.email||u.id)}</div>
-        ${u.role==='staff'?`<div style="margin-top:4px;display:flex;gap:4px;flex-wrap:wrap;align-items:center;"><span style="font-size:10px;color:var(--graydk);">Batches:</span> ${batches}</div>`:''}
+    html += `<div style="padding:9px 10px;background:var(--card2);border:1px solid var(--border);border-radius:8px;margin-bottom:6px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:13px;font-weight:700;color:var(--offwhite);">👤 ${escHtml(u.name||u.email||u.id)} <span class="badge ${u.role==='admin'?'badge-gold':'badge-blue'}">${u.role}</span></div>
+          <div style="font-size:11px;color:var(--gray);margin-top:2px;">📧 ${escHtml(u.email||u.id)}</div>
+        </div>
+        <div style="display:flex;gap:5px;flex-shrink:0;">
+          ${u.role==='staff'?`<button onclick="openAssignBatchModal('${escHtml(u.id)}')" class="btn btn-gold btn-xs">📦 Batch</button>`:''}
+          <button onclick="openEditUser('${escHtml(u.id)}')" class="btn btn-outline btn-xs">✏️ Edit</button>
+        </div>
       </div>
-      <button onclick="openEditUser('${escHtml(u.id)}')" class="btn btn-outline btn-xs" style="flex-shrink:0;margin-left:8px;">✏️ Edit</button>
+      ${u.role==='staff'?`<div style="margin-top:6px;display:flex;gap:4px;flex-wrap:wrap;align-items:center;">
+        <span style="font-size:10px;color:var(--graydk);">Batches:</span> ${batches}
+      </div>`:''}
     </div>`;
   });
   document.getElementById('userListWrap').innerHTML = html || `<div style="color:var(--gray);font-size:12px;">No users.</div>`;
@@ -6783,9 +6831,31 @@ function renderClassLog() {
 }
 
 function deleteClassLog(id) {
-  confirm_('🗑️', 'Delete Entry', 'Delete this class log entry?', () => {
+  confirm_('🗑️', 'Delete Entry', 'Delete this class log entry?', async () => {
+    // Remove from local DB
     DB.classLog = (DB.classLog || []).filter(e => e.id !== id);
-    scheduleFirebasePush();
+
+    // Directly delete from Firebase if connected
+    if (fbDb) {
+      try {
+        const _fbUser = window._fbAuth && window._fbAuth.currentUser;
+        const _token  = _fbUser ? await _fbUser.getIdToken() : '';
+        const _auth   = _token ? '?auth=' + encodeURIComponent(_token) : '';
+        // Push the full updated classLog array to Firebase
+        const url = fbBaseUrl() + '/sacdb/classLog.json' + _auth;
+        await fetch(url, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(DB.classLog)
+        });
+      } catch(e) {
+        // Fallback to scheduled push
+        scheduleFirebasePush();
+      }
+    } else {
+      scheduleFirebasePush();
+    }
+
     addLog('classlog', 'Deleted class log entry ' + id);
     showToast('Entry deleted ✓', 'success');
     renderClassLog();
@@ -6851,14 +6921,40 @@ function getStaffBatches() {
   return Array.isArray(batches) && batches.length > 0 ? batches : [];
 }
 
-function openSettingsModal() {
-  const srcStatus = document.getElementById('fbStatus');
-  const dstStatus = document.getElementById('fbStatusModal');
-  if (srcStatus && dstStatus) dstStatus.textContent = srcStatus.textContent;
+function openAssignBatchModal(userId) {
+  const u = DB.users.find(x => x.id === userId);
+  if (!u) return;
+  document.getElementById('assignBatchUserId').value = userId;
+  document.getElementById('assignBatchUserName').textContent = '👤 ' + (u.name || u.email || u.id);
+  document.getElementById('assignBatchUserEmail').textContent = '📧 ' + (u.email || u.id);
+  const assigned = Array.isArray(u.assignedBatches) ? u.assignedBatches : [];
+  document.getElementById('assignBatchCheckboxes').innerHTML = DB.batches.map(b => `
+    <label style="display:flex;align-items:center;gap:10px;cursor:pointer;background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;transition:border-color .15s;"
+      onclick="this.style.borderColor=this.querySelector('input').checked?'var(--border)':'var(--accent2)'">
+      <input type="checkbox" value="${escHtml(b)}" ${assigned.includes(b)?'checked':''}
+        style="width:17px;height:17px;accent-color:var(--accent2);cursor:pointer;flex-shrink:0;">
+      <span style="font-size:13px;font-weight:600;color:var(--offwhite);">${escHtml(b)}</span>
+    </label>`).join('');
+  openModal('modalAssignBatch');
+}
+function saveAssignBatch() {
+  const userId = document.getElementById('assignBatchUserId').value;
+  const cbs = document.querySelectorAll('#assignBatchCheckboxes input[type=checkbox]');
+  const assignedBatches = Array.from(cbs).filter(cb => cb.checked).map(cb => cb.value);
+  const idx = DB.users.findIndex(u => u.id === userId);
+  if (idx < 0) return;
+  const userName = DB.users[idx].name || DB.users[idx].email || userId;
+  DB.users[idx].assignedBatches = assignedBatches;
+  scheduleFirebasePush();
+  addLog('user', `Batch assigned to "${userName}": ${assignedBatches.join(', ') || 'All batches'}`);
+  closeModal('modalAssignBatch');
+  renderUserList();
+  showToast(assignedBatches.length
+    ? `Assigned ${assignedBatches.length} batch(es) to ${userName} ✓`
+    : `${userName} can now access all batches ✓`, 'success');
+}
 
-  const srcLP = document.getElementById('lastPushInfo');
-  const dstLP = document.getElementById('lastPushInfoModal');
-  if (srcLP && dstLP) dstLP.textContent = srcLP.textContent;
+function openSettingsModal() {
 
   const adminOnly = document.getElementById('settingsAdminOnly');
   if (adminOnly) adminOnly.style.display = isAdmin() ? '' : 'none';
