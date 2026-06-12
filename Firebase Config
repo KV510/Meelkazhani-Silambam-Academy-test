@@ -1,11 +1,8 @@
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: "AIzaSyAxnh9ThMgimtkCMJLLeYpW1W0i4YD4SG8",
-  authDomain: "meelkazhani-silambam-aca-e8142.firebaseapp.com",
-  databaseURL: "https://meelkazhani-silambam-aca-e8142-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "meelkazhani-silambam-aca-e8142",
-  storageBucket: "meelkazhani-silambam-aca-e8142.firebasestorage.app",
-  messagingSenderId: "660588472399",
-  appId: "1:660588472399:web:c399f732098caaf223223a",
-  measurementId: "G-HY6KW672GV"
+  apiKey: "AIzaSyCz3JNH9m_-rjMzA8aMsrhMnYDLJiR4NBw",
+  authDomain: "meelkazhani-silambam-academy-t.firebaseapp.com",
+  projectId: "meelkazhani-silambam-academy-t",
+  storageBucket: "meelkazhani-silambam-academy-t.firebasestorage.app",
+  messagingSenderId: "900036312619",
+  appId: "1:900036312619:web:d6b220fa69bc7702f3f46e"
 };
