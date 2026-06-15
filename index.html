@@ -25,6 +25,7 @@
 <script type="module">
   import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js';
   import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
+  import { initializeAppCheck, ReCaptchaV3Provider, getToken } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-app-check.js';
 
   // ── YOUR FIREBASE CONFIG (safe to have here — Auth token protects data) ──
   const firebaseConfig = {
@@ -38,6 +39,29 @@
   };
 
   const app  = initializeApp(firebaseConfig);
+
+  // ── APP CHECK (reCAPTCHA v3) ──
+  // Replace 'YOUR_RECAPTCHA_SITE_KEY' with the site key from
+  // Firebase Console → App Check → register web app → reCAPTCHA v3.
+  try {
+    const appCheck = initializeAppCheck(app, {
+      provider: new ReCaptchaV3Provider('6LcgpCAtAAAAAFFkiBfD6XumWaK5r8dXGz3ryM58'),
+      isTokenAutoRefreshEnabled: true
+    });
+    // Expose a helper so REST calls can attach the App Check token
+    window._fbGetAppCheckToken = async () => {
+      try {
+        const result = await getToken(appCheck, /* forceRefresh */ false);
+        return result && result.token ? result.token : '';
+      } catch (e) {
+        console.warn('App Check token fetch failed:', e);
+        return '';
+      }
+    };
+  } catch (e) {
+    console.warn('App Check init skipped:', e);
+  }
+
   const auth = getAuth(app);
 
   // Expose to global scope so non-module scripts can use them
@@ -849,6 +873,11 @@ body { font-family: 'Poppins', 'Segoe UI', 'Noto Sans', Roboto, 'Arial Unicode M
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         <input type="text" class="search-input" placeholder="Search by name or phone…" id="enquirySearch" oninput="renderEnquiryList()">
       </div>
+      <!-- Active / Archive toggle (admin only) -->
+      <div id="enqViewToggle" style="display:none;gap:7px;margin-bottom:10px;">
+        <button class="batch-chip active" id="enqViewActiveBtn" onclick="setEnqView('active')">📋 Active</button>
+        <button class="batch-chip" id="enqViewArchiveBtn" onclick="setEnqView('archive')">🗄️ Archive</button>
+      </div>
       <div id="enquiryListWrap"></div>
     </div>
 
@@ -878,7 +907,6 @@ body { font-family: 'Poppins', 'Segoe UI', 'Noto Sans', Roboto, 'Arial Unicode M
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
         <div class="section-title" style="margin-bottom:0;">👤 Profile</div>
         <div style="display:flex;gap:6px;">
-          <button class="btn btn-outline btn-sm" id="themeToggleBtn" onclick="toggleTheme()" title="Switch theme">🌙 Dark</button>
           <button class="btn btn-outline btn-sm" onclick="openSettingsModal()" title="Settings">⚙️ Settings</button>
           <button class="btn btn-danger btn-sm" onclick="doLogout()">Logout</button>
         </div>
@@ -1283,6 +1311,7 @@ body { font-family: 'Poppins', 'Segoe UI', 'Noto Sans', Roboto, 'Arial Unicode M
     <div id="enquiryDetailBody"></div>
     <div style="margin-top:14px;">
       <button class="btn btn-success" style="width:100%;padding:11px;margin-bottom:8px;font-size:14px;" id="enqConvertBtn">👥 Convert to Student</button>
+      <button class="btn btn-outline" style="width:100%;padding:10px;margin-bottom:8px;font-size:13px;" id="enqArchiveBtn">🗄️ Move to Archive</button>
       <div style="display:flex;gap:8px;">
         <button class="btn btn-danger btn-sm" style="flex:1;" id="enqDeleteBtn">🗑️ Delete</button>
         <button class="btn btn-warning btn-sm" style="flex:1;" id="enqEditBtn">✏️ Edit</button>
@@ -1373,6 +1402,15 @@ body { font-family: 'Poppins', 'Segoe UI', 'Noto Sans', Roboto, 'Arial Unicode M
       <button class="modal-close" onclick="closeModal('modalSettings')">×</button>
     </div>
 
+    <!-- Theme — ALL users -->
+    <div style="margin-bottom:16px;">
+      <div class="section-title" style="font-size:13px;margin-bottom:8px;">🎨 Appearance</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--royal2);border-radius:8px;padding:11px 12px;">
+        <span style="font-size:13px;font-weight:600;color:var(--offwhite);">Theme</span>
+        <button class="btn btn-outline btn-sm" id="themeToggleBtn" onclick="toggleTheme()" title="Switch theme">🌙 Dark</button>
+      </div>
+    </div>
+
     <!-- Firebase Sync — ALL users -->
     <div style="margin-bottom:16px;">
       <div class="section-title" style="font-size:13px;margin-bottom:8px;">🔥 Firebase Sync</div>
@@ -1428,36 +1466,93 @@ body { font-family: 'Poppins', 'Segoe UI', 'Noto Sans', Roboto, 'Arial Unicode M
 
 <!-- LOG A CLASS MODAL -->
 <div class="modal-overlay" id="modalClassLogAdd">
+  <div class="modal" style="max-width:420px;padding:0;overflow:hidden;">
+    <!-- Header -->
+    <div style="display:flex;align-items:center;gap:12px;padding:18px 20px;border-bottom:1px solid var(--border);">
+      <div style="width:42px;height:42px;border-radius:11px;background:var(--accent2);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+      </div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:16px;font-weight:700;color:var(--offwhite);line-height:1.2;">Log a Class</div>
+        <div style="font-size:12px;color:var(--gray);margin-top:1px;">Record a completed class session</div>
+      </div>
+      <button class="modal-close" onclick="closeModal('modalClassLogAdd')" style="position:static;">×</button>
+    </div>
+
+    <!-- Body -->
+    <div style="padding:18px 20px;">
+      <div class="form-row" style="margin-bottom:14px;">
+        <div class="form-group" style="margin-bottom:0;">
+          <label class="form-label">Date</label>
+          <input type="date" class="form-input" id="classLogDate">
+        </div>
+        <div class="form-group" style="margin-bottom:0;">
+          <label class="form-label">Batch</label>
+          <select class="form-select" id="classLogBatch"></select>
+        </div>
+      </div>
+
+      <div style="background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:14px;">
+        <div style="font-size:11px;font-weight:700;color:var(--gray);letter-spacing:.4px;margin-bottom:10px;">⏱ CLASS TIMING</div>
+        <div class="form-row" style="margin-bottom:0;">
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label" style="color:#16a34a;">🟢 In Time</label>
+            <input type="time" class="form-input" id="classLogInTime">
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label" style="color:#dc2626;">🔴 Out Time</label>
+            <input type="time" class="form-input" id="classLogOutTime">
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-bottom:0;">
+        <label class="form-label">Session Notes <span style="font-weight:400;color:var(--gray);">(optional)</span></label>
+        <textarea class="form-input" id="classLogNote" rows="3" placeholder="e.g. Warm-up, Silambam basics, Footwork drills…" style="resize:none;"></textarea>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div style="display:flex;gap:10px;padding:14px 20px;border-top:1px solid var(--border);background:var(--card2);">
+      <button class="btn btn-outline" style="flex:1;padding:11px;" onclick="closeModal('modalClassLogAdd')">Cancel</button>
+      <button class="btn btn-primary" style="flex:2;padding:11px;" onclick="saveClassLog()">💾 Save Entry</button>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT CLASS LOG MODAL (admin only) -->
+<div class="modal-overlay" id="modalClassLogEdit">
   <div class="modal">
     <div class="modal-title">
-      <span>➕ Log a Class</span>
-      <button class="modal-close" onclick="closeModal('modalClassLogAdd')">×</button>
+      <span>✏️ Edit Class Log</span>
+      <button class="modal-close" onclick="closeModal('modalClassLogEdit')">×</button>
     </div>
+    <input type="hidden" id="editClassLogId">
     <div class="form-row" style="margin-bottom:8px;">
       <div class="form-group" style="margin-bottom:0;">
         <label class="form-label">Date</label>
-        <input type="date" class="form-input" id="classLogDate">
+        <input type="date" class="form-input" id="editClassLogDate">
       </div>
       <div class="form-group" style="margin-bottom:0;">
         <label class="form-label">Batch</label>
-        <select class="form-select" id="classLogBatch"></select>
+        <select class="form-select" id="editClassLogBatch"></select>
       </div>
     </div>
     <div class="form-row" style="margin-bottom:8px;">
       <div class="form-group" style="margin-bottom:0;">
         <label class="form-label">🟢 In Time</label>
-        <input type="time" class="form-input" id="classLogInTime">
+        <input type="time" class="form-input" id="editClassLogInTime">
       </div>
       <div class="form-group" style="margin-bottom:0;">
         <label class="form-label">🔴 Out Time</label>
-        <input type="time" class="form-input" id="classLogOutTime">
+        <input type="time" class="form-input" id="editClassLogOutTime">
       </div>
     </div>
     <div class="form-group" style="margin-bottom:12px;">
       <label class="form-label">What was covered? (optional)</label>
-      <textarea class="form-input" id="classLogNote" rows="3" placeholder="e.g. Warm-up, Silambam basics, Footwork drills…" style="resize:none;"></textarea>
+      <textarea class="form-input" id="editClassLogNote" rows="3" style="resize:none;"></textarea>
     </div>
-    <button class="btn btn-primary" style="width:100%;padding:12px;" onclick="saveClassLog()">💾 Save Entry</button>
+    <button class="btn btn-primary" style="width:100%;padding:12px;" onclick="saveClassLogEdit()">💾 Update Entry</button>
   </div>
 </div>
 
@@ -1640,6 +1735,15 @@ function conversionBadge(ratio) {
   return `<span class="badge ${map[ratio]||'badge-gray'}" style="font-size:10px;">${icon[ratio]||''}${ratio}</span>`;
 }
 
+function setEnqView(view) {
+  window._enqView = view;
+  const aBtn = document.getElementById('enqViewActiveBtn');
+  const rBtn = document.getElementById('enqViewArchiveBtn');
+  if (aBtn) aBtn.classList.toggle('active', view === 'active');
+  if (rBtn) rBtn.classList.toggle('active', view === 'archive');
+  renderEnquiryList();
+}
+
 function renderEnquiryList() {
   const wrap = document.getElementById('enquiryListWrap');
   if (!wrap) return;
@@ -1649,6 +1753,14 @@ function renderEnquiryList() {
   const filterReminder = document.getElementById('enqFilterReminderDate')?.value || '';
   const filterStaff = document.getElementById('enqFilterStaff')?.value || '';
   let list = DB.enquiries;
+
+  // Show Active/Archive toggle for admins only
+  const viewToggle = document.getElementById('enqViewToggle');
+  if (viewToggle) viewToggle.style.display = isAdmin() ? 'flex' : 'none';
+
+  // Filter by archive state: staff always see active only; admins switch via toggle
+  const showArchive = isAdmin() && window._enqView === 'archive';
+  list = list.filter(q => showArchive ? q.archived : !q.archived);
 
   // Admin: show staff filter row and populate it dynamically
   if (isAdmin()) {
@@ -1692,9 +1804,12 @@ function renderEnquiryList() {
   });
 
   if (!list.length) {
-    wrap.innerHTML = isAdmin()
-      ? '<div class="empty-state">No queries match your filters.<br>Tap <b>+ Add</b> to record one.</div>'
-      : '<div class="empty-state">No queries assigned to you yet.</div>';
+    const inArchive = isAdmin() && window._enqView === 'archive';
+    wrap.innerHTML = inArchive
+      ? '<div class="empty-state">🗄️ No archived queries.</div>'
+      : (isAdmin()
+        ? '<div class="empty-state">No queries match your filters.<br>Tap <b>+ Add</b> to record one.</div>'
+        : '<div class="empty-state">No queries assigned to you yet.</div>');
     return;
   }
   wrap.innerHTML = list.map(q => {
@@ -1840,11 +1955,17 @@ function openEnquiryDetail(id) {
   document.getElementById('enqDeleteBtn').onclick  = () => deleteEnquiry(id);
   document.getElementById('enqEditBtn').onclick    = () => openEditEnquiryModal(id);
   document.getElementById('enqConvertBtn').onclick = () => convertEnquiryToStudent(id);
+  const archBtn = document.getElementById('enqArchiveBtn');
+  if (archBtn) {
+    archBtn.textContent = q.archived ? '↩️ Restore from Archive' : '🗄️ Move to Archive';
+    archBtn.onclick = () => toggleArchiveEnquiry(id);
+  }
   // Admin: full access. Staff: view + notes only
   const isAdm = isAdmin();
   document.getElementById('enqConvertBtn').style.display = isAdm ? '' : 'none';
   document.getElementById('enqDeleteBtn').style.display  = isAdm ? '' : 'none';
   document.getElementById('enqEditBtn').style.display    = isAdm ? '' : 'none';
+  if (archBtn) archBtn.style.display = isAdm ? '' : 'none';
   openModal('modalEnquiryDetail');
 }
 
@@ -1943,6 +2064,26 @@ function convertEnquiryToStudent(id) {
     noteEl.textContent = '📋 Parent name & contact pre-filled from query. Please enter the student\'s name above.';
   }
   openModal('modalStudent');
+}
+
+function toggleArchiveEnquiry(id) {
+  if (!isAdmin()) { showToast('Only admins can archive queries', 'error'); return; }
+  const q = (DB.enquiries||[]).find(x => x.id === id);
+  if (!q) return;
+  const goingToArchive = !q.archived;
+  const title = goingToArchive ? '🗄️ Move to Archive' : '↩️ Restore Query';
+  const msg = goingToArchive
+    ? `Move "${q.name}" to the archive? They will be hidden from the active list.`
+    : `Restore "${q.name}" back to the active queries list?`;
+  confirm_(goingToArchive ? '🗄️' : '↩️', title, msg, () => {
+    q.archived = goingToArchive;
+    q.archivedAt = goingToArchive ? new Date().toISOString() : '';
+    addLog('enquiry', `${goingToArchive ? 'Archived' : 'Restored'} query for ${q.name}`);
+    scheduleFirebasePush();
+    closeModal('modalEnquiryDetail');
+    renderEnquiryList();
+    showToast(goingToArchive ? 'Moved to archive ✓' : 'Restored ✓', 'success');
+  });
 }
 
 function deleteEnquiry(id) {
@@ -2119,7 +2260,8 @@ function deleteSnapshot(key) {
         const _fbUser = window._fbAuth && window._fbAuth.currentUser;
         const _token = _fbUser ? await _fbUser.getIdToken() : '';
         const _delAuth = _token ? '?auth=' + encodeURIComponent(_token) : '';
-        await fetch(fbBaseUrl() + '/snapshots/' + key + '.json' + _delAuth, { method: 'DELETE' });
+        const _delHdrs = await fbHeaders();
+        await fetch(fbBaseUrl() + '/snapshots/' + key + '.json' + _delAuth, { method: 'DELETE', headers: _delHdrs });
         DB.snapshotIndex = (DB.snapshotIndex || []).filter(s => s.key !== key);
         scheduleFirebasePush();
         renderSnapshotList();
@@ -2293,12 +2435,14 @@ function toggleLoginPass() {
   const pw = document.getElementById('loginPass');
   if (pw) pw.type = pw.type === 'password' ? 'text' : 'password';
 }
-function showLoginError(msg) {
+function showLoginError(msg, opts) {
+  const quiet = opts && opts.quiet;  // quiet = update text only, no shake/select
   const el = document.getElementById('loginError');
   const msgEl = document.getElementById('loginErrorMsg');
   const box = document.querySelector('.login-box');
   if (msgEl) msgEl.textContent = msg;
   if (el) el.classList.add('show');
+  if (quiet) return;  // skip shake + field highlight for repeated countdown updates
   // Shake the login box
   if (box) {
     box.classList.remove('login-shake');
@@ -2311,6 +2455,12 @@ function showLoginError(msg) {
   if (pwEl) { pwEl.style.borderColor = '#ef4444'; pwEl.select(); }
 }
 async function doLogin() {
+
+  // ── Progressive lockout check ──
+  if (_loginLockUntil && Date.now() < _loginLockUntil) {
+    _showLockoutCountdown();
+    return;
+  }
 
   const rawId = document.getElementById('loginId').value.trim().toLowerCase();
   const email = rawId.includes('@') ? rawId : rawId + '@silambam.app';
@@ -2344,6 +2494,7 @@ async function doLogin() {
 
     // Step 3: Launch app
     DB.users = users;
+    _loginFailCount = 0; _loginLockUntil = 0; _persistLockout();  // reset lockout on success
     clearLoginError();
     btn.textContent = 'Login →'; btn.disabled = false;
     currentUser = user;
@@ -2385,13 +2536,92 @@ async function doLogin() {
     if (code === 'auth/user-not-found' || code === 'auth/invalid-email') {
       showLoginError('User ID not found. Check and try again.');
     } else if (code === 'auth/wrong-password' || code === 'auth/invalid-credential') {
-      showLoginError('Incorrect password. Please try again.');
+      // Count the failed attempt and apply progressive lockout
+      _loginFailCount++;
+      // Lockout waits in seconds, starting from the 3rd wrong attempt
+      // 3rd:30s, 4th:1m, 5th:10m, 6th:6h, 7th:1day, 8th:1week, 9th+:1month
+      const waits = [
+        30,            // 3rd
+        60,            // 4th  (1 min)
+        600,           // 5th  (10 min)
+        6 * 3600,      // 6th  (6 hours)
+        24 * 3600,     // 7th  (1 day)
+        7 * 24 * 3600, // 8th  (1 week)
+        30 * 24 * 3600 // 9th+ (1 month)
+      ];
+      if (_loginFailCount >= 3) {
+        const idx = Math.min(_loginFailCount - 3, waits.length - 1);
+        const waitSec = waits[idx];
+        _loginLockUntil = Date.now() + waitSec * 1000;
+        _persistLockout();
+        _showLockoutCountdown();
+      } else {
+        _persistLockout();
+        const left = 3 - _loginFailCount; // attempts before lock
+        showLoginError(`Incorrect password. ⚠️ ${left} more wrong attempt${left>1?'s':''} will lock login temporarily.`);
+      }
     } else if (code === 'auth/too-many-requests') {
       showLoginError('Too many attempts. Try again later.');
     } else {
       showLoginError(err.message || 'Login failed. Please try again.');
     }
   }
+}
+
+// ── Progressive login lockout state + countdown ──
+let _loginFailCount = 0;
+let _loginLockUntil = 0;
+let _lockTimer = null;
+
+// Restore persisted lockout on page load (so refresh doesn't bypass it)
+(function _restoreLockout(){
+  try {
+    const fc = parseInt(localStorage.getItem('sac_login_failcount') || '0');
+    const lu = parseInt(localStorage.getItem('sac_login_lockuntil') || '0');
+    if (!isNaN(fc)) _loginFailCount = fc;
+    if (!isNaN(lu)) _loginLockUntil = lu;
+  } catch(e) {}
+  // If a lock is still active, show the countdown once the page is ready
+  if (_loginLockUntil && Date.now() < _loginLockUntil) {
+    const start = () => { try { _showLockoutCountdown(); } catch(e) {} };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
+    else start();
+  }
+})();
+
+function _persistLockout(){
+  try {
+    localStorage.setItem('sac_login_failcount', String(_loginFailCount));
+    localStorage.setItem('sac_login_lockuntil', String(_loginLockUntil));
+  } catch(e) {}
+}
+function _showLockoutCountdown() {
+  const btn = document.getElementById('loginBtn');
+  if (_lockTimer) clearInterval(_lockTimer);
+  const fmt = (secs) => {
+    const d = Math.floor(secs / 86400);
+    const h = Math.floor((secs % 86400) / 3600);
+    const m = Math.floor((secs % 3600) / 60);
+    const s = secs % 60;
+    if (d > 0) return `${d}d ${h}h`;
+    if (h > 0) return `${h}h ${m}m`;
+    if (m > 0) return `${m}m ${s}s`;
+    return `${s}s`;
+  };
+  const tick = () => {
+    const remain = Math.ceil((_loginLockUntil - Date.now()) / 1000);
+    if (remain <= 0) {
+      clearInterval(_lockTimer); _lockTimer = null;
+      if (btn) { btn.disabled = false; btn.textContent = 'Sign In to Portal'; }
+      clearLoginError();
+      return;
+    }
+    const tStr = fmt(remain);
+    showLoginError(`🔒 Too many wrong attempts. Login locked. Try again in ${tStr}.`, { quiet: true });
+    if (btn) { btn.disabled = true; btn.textContent = `Locked (${tStr})`; }
+  };
+  tick();
+  _lockTimer = setInterval(tick, 1000);
 }
 // ================================================================
 // FIRST-TIME SETUP
@@ -2557,10 +2787,23 @@ async function fbRestUrl(path) {
   return fbBaseUrl() + path + '.json' + (token ? sep + 'auth=' + encodeURIComponent(token) : '');
 }
 
+// Build headers including the App Check token (if available)
+async function fbHeaders(extra) {
+  const headers = Object.assign({}, extra || {});
+  try {
+    if (window._fbGetAppCheckToken) {
+      const acToken = await window._fbGetAppCheckToken();
+      if (acToken) headers['X-Firebase-AppCheck'] = acToken;
+    }
+  } catch(e) {}
+  return headers;
+}
+
 // GET — fetch data from Firebase REST
 async function fbGet(path) {
   const url = await fbRestUrl(path);
-  const res = await fetch(url);
+  const headers = await fbHeaders();
+  const res = await fetch(url, { headers });
   if (!res.ok) throw new Error('Firebase GET failed: ' + res.status);
   return res.json();
 }
@@ -2568,9 +2811,10 @@ async function fbGet(path) {
 // PUT — write data to Firebase REST
 async function fbPut(path, data) {
   const url = await fbRestUrl(path);
+  const headers = await fbHeaders({ 'Content-Type': 'application/json' });
   const res = await fetch(url, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify(data)
   });
   if (!res.ok) throw new Error('Firebase PUT failed: ' + res.status);
@@ -2841,7 +3085,8 @@ async function fetchUsersForLogin() {
   for (const path of paths) {
     try {
       const url = await fbRestUrl(path);
-      const r = await fetch(url);
+      const headers = await fbHeaders();
+      const r = await fetch(url, { headers });
       if (!r.ok) continue;
       const data = await r.json();
       if (!data) continue;
@@ -7084,6 +7329,56 @@ function openClassLogAddModal() {
   openModal('modalClassLogAdd');
 }
 
+function openClassLogEditModal(id) {
+  if (!isAdmin()) { showToast('Only admins can edit entries', 'error'); return; }
+  const e = (DB.classLog || []).find(x => x.id === id);
+  if (!e) return;
+  const bSel = document.getElementById('editClassLogBatch');
+  if (bSel) bSel.innerHTML = DB.batches.map(b => `<option value="${escHtml(b)}"${b===e.batch?' selected':''}>${escHtml(b)}</option>`).join('');
+  document.getElementById('editClassLogId').value = e.id;
+  document.getElementById('editClassLogDate').value = e.date || '';
+  document.getElementById('editClassLogInTime').value = e.inTime || '';
+  document.getElementById('editClassLogOutTime').value = e.outTime || '';
+  document.getElementById('editClassLogNote').value = e.note || '';
+  openModal('modalClassLogEdit');
+}
+
+function saveClassLogEdit() {
+  if (!isAdmin()) { showToast('Only admins can edit entries', 'error'); return; }
+  const id      = document.getElementById('editClassLogId').value;
+  const date    = document.getElementById('editClassLogDate').value;
+  const batch   = document.getElementById('editClassLogBatch').value;
+  const inTime  = document.getElementById('editClassLogInTime').value;
+  const outTime = document.getElementById('editClassLogOutTime').value;
+  const note    = (document.getElementById('editClassLogNote').value || '').trim();
+
+  if (!date)  { showToast('Please select a date', 'error'); return; }
+  if (!batch) { showToast('Please select a batch', 'error'); return; }
+
+  // Calculate duration if both times provided
+  let duration = '';
+  if (inTime && outTime) {
+    const [ih, im] = inTime.split(':').map(Number);
+    const [oh, om] = outTime.split(':').map(Number);
+    const mins = (oh * 60 + om) - (ih * 60 + im);
+    if (mins > 0) {
+      const h = Math.floor(mins / 60);
+      const m = mins % 60;
+      duration = h > 0 ? `${h}h ${m}m` : `${m}m`;
+    }
+  }
+
+  const idx = (DB.classLog || []).findIndex(x => x.id === id);
+  if (idx < 0) return;
+  DB.classLog[idx] = { ...DB.classLog[idx], date, batch, inTime, outTime, duration, note };
+
+  scheduleFirebasePush();
+  addLog('classlog', `Class log edited: ${batch} on ${date}`);
+  showToast('Entry updated ✓', 'success');
+  closeModal('modalClassLogEdit');
+  renderClassLog();
+}
+
 function saveClassLog() {
   const date    = document.getElementById('classLogDate').value;
   const batch   = document.getElementById('classLogBatch').value;
@@ -7132,7 +7427,11 @@ function renderClassLog() {
   const filterBatch = document.getElementById('classLogFilterBatch')?.value || '';
   const filterMonth = document.getElementById('classLogFilterMonth')?.value || '';
 
+  // Staff only see entries for their assigned batches; admins see all
+  const staffBatches = getStaffBatches();
+
   let list = [...DB.classLog].sort((a, b) => b.date.localeCompare(a.date));
+  if (staffBatches.length > 0) list = list.filter(e => staffBatches.includes(e.batch));
   if (filterBatch) list = list.filter(e => e.batch === filterBatch);
   if (filterMonth) list = list.filter(e => e.date.startsWith(filterMonth));
 
@@ -7147,7 +7446,7 @@ function renderClassLog() {
     const d = new Date(e.date + 'T00:00:00');
     const dayName = DAYS[d.getDay()];
     const dateDisp = `${dayName}, ${pad(d.getDate())} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
-    const canDelete = isAdmin();
+    const canManage = isAdmin();
 
     // Format time as 12-hour
     const fmt12 = t => {
@@ -7173,12 +7472,16 @@ function renderClassLog() {
         ${e.note ? `<div style="font-size:12px;color:var(--offwhite);line-height:1.5;margin-bottom:3px;">${escHtml(e.note)}</div>` : ''}
         <div style="font-size:10px;color:var(--graydk);">✍️ ${escHtml(e.by)} · ${new Date(e.at).toLocaleString('en-GB',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}</div>
       </div>
-      ${canDelete ? `<button onclick="deleteClassLog('${escHtml(e.id)}')" class="btn btn-danger btn-xs" style="flex-shrink:0;">🗑️</button>` : ''}
+      ${canManage ? `<div style="display:flex;flex-direction:column;gap:5px;flex-shrink:0;">
+        <button onclick="openClassLogEditModal('${escHtml(e.id)}')" class="btn btn-primary btn-xs">✏️ Edit</button>
+        <button onclick="deleteClassLog('${escHtml(e.id)}')" class="btn btn-danger btn-xs">🗑️</button>
+      </div>` : ''}
     </div>`;
   }).join('');
 }
 
 function deleteClassLog(id) {
+  if (!isAdmin()) { showToast('Only admins can delete entries', 'error'); return; }
   confirm_('🗑️', 'Delete Entry', 'Delete this class log entry?', async () => {
     // Remove from local DB
     DB.classLog = (DB.classLog || []).filter(e => e.id !== id);
@@ -7191,9 +7494,10 @@ function deleteClassLog(id) {
         const _auth   = _token ? '?auth=' + encodeURIComponent(_token) : '';
         // Push the full updated classLog array to Firebase
         const url = fbBaseUrl() + '/sacdb/classLog.json' + _auth;
+        const _hdrs = await fbHeaders({ 'Content-Type': 'application/json' });
         await fetch(url, {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
+          headers: _hdrs,
           body: JSON.stringify(DB.classLog)
         });
       } catch(e) {
@@ -7386,7 +7690,8 @@ async function deleteSnapshotSettings(key) {
         const _fbUser = window._fbAuth && window._fbAuth.currentUser;
         const _token  = _fbUser ? await _fbUser.getIdToken() : '';
         const _auth   = _token ? '?auth=' + encodeURIComponent(_token) : '';
-        await fetch(fbBaseUrl() + '/snapshots/' + key + '.json' + _auth, { method: 'DELETE' });
+        const _delHdrs2 = await fbHeaders();
+        await fetch(fbBaseUrl() + '/snapshots/' + key + '.json' + _auth, { method: 'DELETE', headers: _delHdrs2 });
         DB.snapshotIndex = (DB.snapshotIndex || []).filter(s => s.key !== key);
         scheduleFirebasePush();
         renderSnapshotListSettings();
